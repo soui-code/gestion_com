@@ -2,69 +2,314 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Point de Vente - Gestion Commerciale</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Point de Vente</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
+
     <link rel="shortcut icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
     <link rel="stylesheet" href="../assets/css/font-awesome.min.css">
     <link rel="stylesheet" href="../assets/css/line-awesome.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
-        .pos-container { height: calc(100vh - 120px); overflow: hidden; margin-top:5px;}
-        .products-section { height: 100%; overflow-y: auto; padding-right: 15px; padding-bottom: 50px; }
-        .cart-section { height: 100%; display: flex; flex-direction: column; background: #fff; border-left: 1px solid #ddd; overflow: hidden; }
-        .cart-items-wrapper { flex: 0; overflow-y: auto; overflow-x: hidden; min-height: 135px; border-bottom: 2px solid #f8f9fa; }
-        
+        .page-wrapper { min-height: 100vh; }
+        .pos-container { min-height: calc(100vh - 140px); display: flex; }
+
+        /* Section produits */
+        .products-section { flex: 1; padding: 15px; max-height: calc(100vh - 140px); overflow-y: auto; }
+
+        /* Section panier - Plus large */
+        .cart-section {
+            width: 450px;
+            background: #fff;
+            border-left: 2px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 140px);
+            position: sticky;
+            top: 70px;
+        }
+        .cart-header {
+            padding: 18px 20px;
+            background: linear-gradient(135deg, #ff9b44 0%, #fc7c0e 100%);
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            min-height: 250px;
+            max-height: 400px;
+        }
+        .cart-footer {
+            border-top: 2px solid #eee;
+            padding: 18px;
+            background: #f8f9fa;
+        }
+
+        /* ===== Cards produits (rectangles larges, peu hautes) ===== */
         .product-card {
-            border: 1px solid #e3e3e3;
-            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
             overflow: hidden;
             cursor: pointer;
-            transition: all 0.2s;
-            height: 100%;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
             background: #fff;
             position: relative;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            height: 112px;
+            margin-bottom: 15px;
         }
         .product-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
             border-color: #ff9b44;
         }
-        .product-img-wrap {
-            height: 100px;
-            background: #f8f9fa;
+        .product-card:active { transform: translateY(-1px); }
+
+        /* Carte en rupture : désactivée visuellement */
+        .product-card.out-of-stock {
+            cursor: not-allowed;
+            opacity: 0.55;
+            filter: grayscale(40%);
+        }
+        .product-card.out-of-stock:hover {
+            transform: none;
+            box-shadow: none;
+            border-color: #e0e0e0;
+        }
+
+        /* Petit "pulse" quand un produit est ajouté au panier */
+        @keyframes addPulse {
+            0%   { transform: scale(1); }
+            45%  { transform: scale(0.97); }
+            100% { transform: scale(1); }
+        }
+        .product-card.just-added {
+            animation: addPulse 0.35s ease;
+            border-color: #28a745 !important;
+            box-shadow: 0 0 0 3px rgba(40,167,69,0.25);
+        }
+
+        .product-img {
+            position: relative;
+            width: 112px;
+            min-width: 112px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #f1f2f4 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            border-bottom: 1px solid #eee;
+            border-right: 1px solid #eee;
+            overflow: hidden;
         }
-        .product-img-wrap i { font-size: 30px; color: #ccc; }
-        .product-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .product-info { padding: 8px; }
-        .product-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; color: #333; line-height: 1.2; height: 32px; overflow: hidden; }
-        .product-price { font-size: 14px; color: #ff9b44; font-weight: 700; }
-        .product-stock { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.6); color: #fff; padding: 1px 5px; border-radius: 4px; font-size: 10px; z-index: 2;}
-        
-        .cart-item { border-bottom: 1px solid #f1f1f1; padding: 8px 10px; }
-        .cart-item:hover { background: #fafafa; }
-        .cart-item-title { font-weight: 600; font-size: 13px; margin-bottom: 3px; }
-        .qty-controls { display: flex; align-items: center; }
-        .qty-btn { width: 24px; height: 24px; border-radius: 4px; border: 1px solid #ddd; background: #fff; color: #333; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; }
+        .product-img i { font-size: 40px; color: #ccc; }
+        .product-img img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Overlay "+" au survol pour signifier l'ajout au panier */
+        .product-add-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,155,68,0.88);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            pointer-events: none;
+        }
+        .product-card:not(.out-of-stock):hover .product-add-overlay { opacity: 1; }
+        .product-add-overlay i { font-size: 22px; color: #fff; }
+
+        .product-body {
+            flex: 1;
+            min-width: 0;
+            padding: 8px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .product-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            line-height: 1.35;
+        }
+        .product-price { font-size: 16px; color: #ff9b44; font-weight: 700; }
+
+        /* Badge stock coloré selon le niveau (positionné sur la vignette image) */
+        .product-stock {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            color: #fff;
+            padding: 3px 7px;
+            border-radius: 5px;
+            font-size: 10px;
+            font-weight: 600;
+            z-index: 2;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+        .product-stock.stock-ok  { background: rgba(0,0,0,0.75); }
+        .product-stock.stock-low { background: #fc7c0e; }
+        .product-stock.stock-out { background: #dc3545; }
+
+        /* Badge quantité déjà présente dans le panier (sur la vignette image) */
+        .cart-qty-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            background: #28a745;
+            color: #fff;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 5px;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            z-index: 3;
+        }
+
+        .cart-item {
+            border-bottom: 1px solid #f0f0f0;
+            padding: 12px 0;
+        }
+        .cart-item:last-child { border-bottom: none; }
+        .qty-controls { display: flex; align-items: center; gap: 8px; }
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
         .qty-btn:hover { background: #ff9b44; color: #fff; border-color: #ff9b44; }
-        .qty-input { width: 35px; height: 24px; text-align: center; border: 1px solid #ddd; margin: 0 3px; border-radius: 4px; font-size: 12px; }
-        .remove-icon { color: #ccc; cursor: pointer; font-size: 16px; transition: color 0.2s; }
-        .remove-icon:hover { color: #dc3545; }
+        .qty-input {
+            width: 55px;
+            height: 32px;
+            text-align: center;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+        }
 
-        .search-bar { position: sticky; top: 0; z-index: 100; background: #f8f9fa; padding-bottom: 10px; }
-        .search-input { border-radius: 50px; padding-left: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #ddd; }
-        .search-input:focus { border-color: #ff9b44; box-shadow: 0 0 0 0.2rem rgba(255, 155, 68, 0.25); }
+        .tax-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin: 3px;
+            font-weight: 500;
+        }
+        .tax-badge .remove-tax {
+            cursor: pointer;
+            font-weight: bold;
+            color: #d32f2f;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .tax-badge .remove-tax:hover { color: #b71c1c; }
 
-        .totals-box { background: #fcfcfc; padding: 10px 15px; border-radius: 0; border-top: 1px solid #eee; }
-        .totals-row { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; color: #666; }
-        .grand-total { font-size: 18px; font-weight: 800; color: #333; border-top: 1px dotted #ccc; padding-top: 8px; margin-top: 8px; }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
+        .search-box {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            padding: 12px 0;
+            margin-bottom: 15px;
+            z-index: 10;
+        }
+        .search-input {
+            border-radius: 25px;
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            width: 100%;
+            font-size: 15px;
+        }
+        .search-input:focus {
+            border-color: #ff9b44;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255,155,68,0.1);
+        }
+
+        .totals-box {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            margin-bottom: 12px;
+        }
+        .totals-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+        .grand-total {
+            font-size: 20px;
+            font-weight: 800;
+            color: #333;
+            border-top: 2px solid #ddd;
+            padding-top: 12px;
+            margin-top: 12px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1199px) {
+            .cart-section { width: 400px; }
+        }
+
+        @media (max-width: 991px) {
+            .pos-container { flex-direction: column; }
+            .cart-section {
+                width: 100%;
+                max-height: none;
+                position: relative;
+                top: 0;
+                margin-top: 20px;
+                border-left: none;
+                border-top: 2px solid #ddd;
+            }
+            .products-section { max-height: none; }
+        }
+
+        @media (max-width: 768px) {
+            .product-card { height: 96px; }
+            .product-img { width: 90px; min-width: 90px; }
+            .product-img i { font-size: 32px; }
+            .product-title { font-size: 12.5px; }
+            .product-price { font-size: 14px; }
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #aaa; }
@@ -73,147 +318,180 @@
 <body>
 <div class="main-wrapper">
     <?php include './config/dashboard.php'; ?>
-    
-    <div class="page-wrapper" style="padding: 25px 20px; background: #f8f9fa; height: 100vh; overflow: hidden;"><br>
-            <br> 
-        <div class="row pos-container">
-            <!-- SECTION PRODUITS (GAUCHE) -->
-            <div class="col-lg-7 col-md-12 products-section">
-                <!-- Header / Search -->
-                <div class="search-bar">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h4 class="mb-0" style="font-weight: 700; color: #333;">Point de Vente</h4>
-                        <span class="badge badge-outline-primary" style="color: #ff9b44; border: 1px solid #ff9b44; padding: 5px 10px; border-radius: 50px;">
-                            <i class="la la-user"></i> <?= $_SESSION['nom'] ?? 'Vendeur' ?>
+
+    <div class="page-wrapper">
+        <div class="content container-fluid">
+            <!-- Header -->
+            <div class="page-header">
+                <div class="row align-items-center">
+                    <div class="col">
+                        <h3 class="page-title"><i class="la la-shopping-cart text-warning"></i> Point de Vente</h3>
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="<?= url('/utilisateur/dashboard') ?>">Dashboard</a></li>
+                            <li class="breadcrumb-item active">POS</li>
+                        </ul>
+                    </div>
+                    <div class="col-auto">
+                        <span class="badge badge-primary px-3 py-2" style="font-size: 13px;">
+                            <i class="la la-user"></i> <?= htmlspecialchars($_SESSION['nom'] ?? 'Vendeur') ?>
                         </span>
                     </div>
-                    <div class="position-relative">
-                        <div class="input-group">
-                            <div class="input-group-prepend">
-                                <span class="input-group-text bg-white border-right-0" style="border-radius: 50px 0 0 50px;"><i class="la la-search"></i></span>
-                            </div>
-                            <input type="text" id="searchInput" class="form-control form-control-lg search-input border-left-0" style="border-radius: 0 50px 50px 0;" placeholder="Rechercher un produit (nom, référence, code-barres)..." autocomplete="off">
-                        </div>
-                        <div id="searchResults" class="list-group position-absolute w-100 shadow-lg" style="z-index: 1050; display: none; max-height: 400px; overflow-y: auto; top: 100%; margin-top: 5px;"></div>
-                    </div>
-                </div>
-
-                <!-- Grille de Produits -->
-                <div class="row pt-2" id="productsGrid"> 
-                    <?php if(!empty($data['produits'])): ?>
-                        <?php foreach($data['produits'] as $p): ?>
-                        <div class="col-xl-3 col-lg-4 col-md-4 col-sm-6 col-6 mb-3 product-grid-item" data-name="<?= strtolower(htmlspecialchars($p['designation'])) ?>" data-ref="<?= strtolower(htmlspecialchars($p['reference'])) ?>">
-                            <div class="product-card" onclick="addToCart('<?= htmlspecialchars($p['reference']) ?>', '<?= addslashes(htmlspecialchars($p['designation'])) ?>', <?= $p['prix_vente'] ?>, <?= $p['stock'] ?>)">
-                                <div class="product-stock"><?= $p['stock'] ?> en stock</div>
-                                <div class="product-img-wrap">
-                                    <?php if(!empty($p['photo'])): ?>
-                                        <img src="data:<?= $p['photo_type'] ?>;base64,<?= base64_encode($p['photo']) ?>" alt="Produit">
-                                    <?php else: ?>
-                                        <i class="la la-image"></i>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="product-info">
-                                    <div class="product-title"><?= htmlspecialchars($p['designation']) ?></div>
-                                    <div class="product-price"><?= number_format($p['prix_vente'], 0, ',', ' ') ?> F</div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <div class="col-12 text-center mt-5 text-muted">
-                            <i class="la la-box la-4x mb-3"></i>
-                            <h5>Aucun produit disponible</h5>
-                        </div>
-                    <?php endif; ?>
                 </div>
             </div>
 
-            <!-- SECTION PANIER (DROITE) -->
-            <div class="col-lg-5 col-md-12">
-                <div class="card cart-section shadow-sm mb-0">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 px-3">
-                        <h5 class="card-title mb-0" style="font-weight:700;"><i class="la la-shopping-cart text-warning"></i> MON PANIER</h5>
-                        <button class="btn btn-xs btn-link text-danger p-0" onclick="clearCart()"><i class="la la-trash"></i> Vider</button>
+            <!-- Corps POS -->
+            <div class="pos-container">
+                <!-- PRODUITS -->
+                <div class="products-section">
+                    <div class="search-box">
+                        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Rechercher un produit par nom ou référence..." autocomplete="off">
                     </div>
-                    
-                    <!-- Liste des articles (Scrollable area) -->
-                    <div class="cart-items-wrapper" id="cartItems">
-                        <div class="text-center text-muted my-5" id="emptyCartMsg">
-                            <i class="la la-shopping-basket la-3x mb-2" style="opacity: 0.3;"></i>
-                            <p>Votre panier est vide</p>
+
+                    <div class="row" id="productsGrid">
+                        <?php if(!empty($data['produits'])): ?>
+                            <?php foreach($data['produits'] as $p): ?>
+                            <?php
+                                $stock = (int)$p['stock'];
+                                if ($stock <= 0) {
+                                    $stockClass = 'stock-out';
+                                    $stockLabel = 'Rupture';
+                                    $cardClass  = 'out-of-stock';
+                                } elseif ($stock <= 5) {
+                                    $stockClass = 'stock-low';
+                                    $stockLabel = $stock . ' restant' . ($stock > 1 ? 's' : '');
+                                    $cardClass  = '';
+                                } else {
+                                    $stockClass = 'stock-ok';
+                                    $stockLabel = $stock;
+                                    $cardClass  = '';
+                                }
+                                $clickAction = $stock > 0
+                                    ? "addToCart(" . json_encode($p["reference"]) . ", " . json_encode($p["designation"]) . ", " . $p["prix_vente"] . ", " . $p["stock"] . ")"
+                                    : "alert('⚠️ Produit en rupture de stock')";
+                            ?>
+                            <div class="col-xl-4 col-lg-6 col-md-6 col-sm-6 col-12 product-item"
+                                 data-name="<?= strtolower($p['designation']) ?>"
+                                 data-ref="<?= strtolower($p['reference']) ?>">
+                                <div class="product-card <?= $cardClass ?>"
+                                     data-refval="<?= htmlspecialchars($p['reference'], ENT_QUOTES) ?>"
+                                     onclick="<?= htmlspecialchars($clickAction, ENT_QUOTES) ?>">
+                                    <div class="product-img">
+                                        <span class="cart-qty-badge">0</span>
+                                        <span class="product-stock <?= $stockClass ?>"><?= $stockLabel ?></span>
+                                        <?php if(!empty($p['photo'])): ?>
+                                            <img src="data:<?= $p['photo_type'] ?>;base64,<?= base64_encode($p['photo']) ?>" alt="">
+                                        <?php else: ?>
+                                            <i class="la la-cube"></i>
+                                        <?php endif; ?>
+                                        <?php if ($stock > 0): ?>
+                                        <div class="product-add-overlay"><i class="la la-plus-circle"></i></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="product-body">
+                                        <div class="product-title"><?= htmlspecialchars($p['designation']) ?></div>
+                                        <div class="product-price"><?= number_format($p['prix_vente'], 0, ',', ' ') ?> F</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="col-12 text-center mt-5">
+                                <i class="la la-box la-4x text-muted mb-3"></i>
+                                <p class="text-muted">Aucun produit disponible</p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- PANIER -->
+                <div class="cart-section">
+                    <div class="cart-header">
+                        <h5 class="mb-0 font-weight-bold"><i class="la la-shopping-basket"></i> MON PANIER</h5>
+                        <button class="btn btn-sm btn-light px-3" onclick="clearCart()" style="border-radius: 20px;">
+                            <i class="la la-trash"></i> Vider
+                        </button>
+                    </div>
+
+                    <div class="cart-items" id="cartItems">
+                        <div class="text-center text-muted" id="emptyMsg" style="padding: 80px 20px;">
+                            <i class="la la-shopping-basket" style="font-size: 70px; opacity:0.2; display:block; margin-bottom:20px;"></i>
+                            <p style="font-size: 16px; margin-bottom: 10px;">Panier vide</p>
+                            <small style="color: #999;">Cliquez sur un produit pour l'ajouter</small>
                         </div>
                     </div>
 
-                    <!-- Zone fixe en bas (Paiement) -->
-                    <div class="payment-section bg-light border-top" style="padding-bottom: 1px;">
-                        <div class="p-3">
-                            <div class="row no-gutters mb-2">
-                                <div class="col-6 pr-1">
-                                    <label class="small text-muted mb-0">Client</label>
-                                    <select id="client-select" class="form-control form-control-sm">
-                                        <option value="3" selected>Client de passage</option>
-                                        <?php foreach ($data['clients'] as $c): ?>
-                                            <option value="<?= $c['code_client'] ?>"><?= htmlspecialchars($c['nom_prenom_client']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="col-6 pl-1">
-                                    <label class="small text-muted mb-0">Application Taxe</label>
-                                    <select id="taxe-select" class="form-control form-control-sm">
-                                        <option value="">Aucune taxe</option>
-                                        <?php foreach ($data['taxes'] as $t): ?>
-                                            <option value="<?= $t['code_taxe'] ?>" data-action="<?= $t['action_taxe'] ?>" data-taux="<?= $t['taux_taxe'] ?>">
-                                                <?= htmlspecialchars($t['titre_taxe']) ?> (<?= floatval($t['taux_taxe']) ?>%)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            
-                            <div class="totals-box">
-                                <div class="totals-row">
-                                    <span>Total HT</span>
-                                    <span id="total-ht">0 F</span>
-                                </div>
-                                <div class="totals-row">
-                                    <span>Taxes</span>
-                                    <span id="montant-taxe">0 F</span>
-                                </div>
-                                <div class="totals-row">
-                                    <span>Remise</span>
-                                    <input type="number" id="remise" class="text-right border-0 bg-transparent p-0" style="width: 80px; font-weight: 600;" value="0" min="0">
-                                </div>
-                                <div class="totals-row grand-total">
-                                    <span>NET À PAYER</span>
-                                    <span id="total-ttc" class="text-dark">0 F</span>
-                                </div>
-                            </div>
-
-                            <div class="row no-gutters mt-2">
-                                <div class="col-5 pr-1">
-                                    <select id="mode-paiement" class="form-control form-control-sm h-100">
-                                        <option value="Espèces">Espèces</option>
-                                        <option value="Mobile Money">MOMO</option>
-                                        <option value="Carte bancaire">CARTE</option>
-                                    </select>
-                                </div>
-                                <div class="col-7 pl-1">
-                                    <input type="number" id="montant-paye" class="form-control form-control-sm text-center font-weight-bold h-100" style="font-size: 16px;" placeholder="Somme reçue">
-                                </div>
-                            </div>
-                            
-                            <div class="text-center mt-2" id="reste-apayer-container" style="display:none;">
-                                <div id="reste-apayer" class="badge p-2 w-100" style="font-size: 13px;"></div>
-                            </div>
-
-                            <button id="btn-valider" class="btn btn-warning btn-block font-weight-bold mt-2 py-2 shadow-sm" style="background: #ff9b44; border:none; color:#fff; font-size: 16px;">
-                                <i class="la la-check-circle"></i> ENCAISSER MAINTENANT
-                            </button>
+                    <div class="cart-footer">
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 font-weight-600">Client</label>
+                            <select id="client-select" class="form-control">
+                                <option value="">Client de passage</option>
+                                <?php foreach ($data['clients'] as $c): ?>
+                                    <option value="<?= $c['code_client'] ?>"><?= htmlspecialchars($c['nom_prenom_client']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1 font-weight-600">Ajouter une taxe</label>
+                            <select id="taxe-select" class="form-control">
+                                <option value="">-- Sélectionner --</option>
+                                <?php foreach ($data['taxes'] as $t): ?>
+                                    <option value="<?= $t['code_taxe'] ?>"
+                                            data-titre="<?= htmlspecialchars($t['titre_taxe']) ?>"
+                                            data-taux="<?= $t['taux_taxe'] ?>"
+                                            data-action="<?= $t['action_taxe'] ?>">
+                                        <?= htmlspecialchars($t['titre_taxe']) ?> (<?= $t['taux_taxe'] ?>%)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div id="taxesBadges" class="mt-2"></div>
+                        </div>
+
+                        <div class="totals-box">
+                            <div class="totals-row">
+                                <span>Total HT</span>
+                                <strong id="totalHT">0 F</strong>
+                            </div>
+                            <div class="totals-row">
+                                <span>Taxes</span>
+                                <strong id="totalTaxes" class="text-info">0 F</strong>
+                            </div>
+                            <div class="totals-row">
+                                <span>Remise</span>
+                                <input type="number" id="remise" class="text-right border-0 bg-transparent p-0" style="width:90px; font-weight:600;" value="0" min="0">
+                            </div>
+                            <div class="totals-row grand-total">
+                                <span>NET À PAYER</span>
+                                <span id="totalTTC" class="text-success">0 F</span>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-5 pr-1">
+                                <label class="small text-muted mb-1">Mode</label>
+                                <select id="modePaiement" class="form-control">
+                                    <option value="Espèces">💵 Espèces</option>
+                                    <option value="Mobile Money">📱 MOMO</option>
+                                    <option value="Carte bancaire">💳 Carte</option>
+                                    <option value="Virement">🏦 Virement</option>
+                                </select>
+                            </div>
+                            <div class="col-7 pl-1">
+                                <label class="small text-muted mb-1">Montant reçu</label>
+                                <input type="number" id="montantPaye" class="form-control text-center font-weight-bold" placeholder="0" style="font-size:15px;">
+                            </div>
+                        </div>
+
+                        <div id="monnaieDiv" class="text-center mb-3" style="display:none;">
+                            <div id="monnaieText" class="badge w-100 p-2" style="font-size: 13px;"></div>
+                        </div>
+
+                        <button id="btnValider" class="btn btn-block py-3 font-weight-bold shadow" style="background: linear-gradient(135deg, #ff9b44 0%, #fc7c0e 100%); border:none; color:#fff; font-size:16px; border-radius:8px;">
+                            <i class="la la-check-circle"></i> ENCAISSER MAINTENANT
+                        </button>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -225,233 +503,294 @@
 <script src="../assets/js/app.js"></script>
 
 <script>
-    const panier = [];
-    let totalHT = 0;
+const panier = [];
+const taxes = [];
 
-    // Recherche AJAX des produits
-    let searchTimeout;
-    $('#searchInput').on('input', function() {
-        clearTimeout(searchTimeout);
-        const val = $(this).val().trim();
-        const resultsContainer = $('#searchResults');
-        
-        if (val.length < 2) {
-            resultsContainer.hide().empty();
-            // Fallback: filtrer la grille locale si le terme est court
-            const lowerVal = val.toLowerCase();
-            $('.product-grid-item').each(function() {
-                const name = $(this).data('name');
-                const ref = $(this).data('ref');
-                if (name.includes(lowerVal) || ref.includes(lowerVal)) $(this).show(); else $(this).hide();
-            });
-            return;
-        }
+// Recherche en temps réel
+$('#searchInput').on('input', function() {
+    const val = $(this).val().toLowerCase().trim();
 
-        searchTimeout = setTimeout(() => {
-            const basePath = window.location.pathname.includes('gestion_commerciale') ? '/gestion_commerciale' : '';
-            $.get(basePath + '/vente/recherche', { term: val }, function(data) {
-                resultsContainer.empty();
-                if (data.length > 0) {
-                    data.forEach(p => {
-                        const item = $(`
-                            <a href="#" class="list-group-item list-group-item-action d-flex align-items-center py-2">
-                                <div class="mr-3" style="width: 40px; height: 40px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; border-radius: 4px;">
-                                    ${p.photo ? `<img src="data:${p.photo_type};base64,${p.photo_base64 || ''}" style="width: 100%; height: 100%; object-fit: cover;">` : '<i class="la la-image text-muted"></i>'}
-                                </div>
-                                <div class="flex-grow-1">
-                                    <div class="font-weight-bold mb-0" style="font-size: 14px;">${p.designation}</div>
-                                    <small class="text-muted">${p.reference} | <span class="text-warning font-weight-bold">${Math.round(p.prix_vente).toLocaleString()} F</span></small>
-                                </div>
-                                <div class="badge badge-info">${p.stock} en stock</div>
-                             </a>
-                        `);
-                        item.click(function(e) {
-                            e.preventDefault();
-                            addToCart(p.reference, p.designation, p.prix_vente, p.stock);
-                            resultsContainer.hide().empty();
-                            $('#searchInput').val('');
-                        });
-                        resultsContainer.append(item);
-                    });
-                    resultsContainer.show();
-                } else {
-                    resultsContainer.hide();
-                }
-            }, 'json');
-        }, 300);
-    });
+    $('.product-item').each(function() {
+        const name = $(this).attr('data-name') || '';
+        const ref = $(this).attr('data-ref') || '';
 
-    // Fermer les résultats si on clique ailleurs
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('.position-relative').length) {
-            $('#searchResults').hide();
-        }
-    });
-
-    // Ajouter au panier
-    function addToCart(ref, nom, prix, maxStock) {
-        const exist = panier.find(p => p.ref == ref);
-        if (exist) {
-            if (exist.qte < maxStock) {
-                exist.qte++;
-            } else {
-                alert("Stock maximum atteint pour ce produit !");
-            }
+        if (val === '' || name.includes(val) || ref.includes(val)) {
+            $(this).show();
         } else {
-            if (maxStock > 0) {
-                panier.push({ ref, nom, prix, qte: 1, maxStock });
-            } else {
-                alert("Rupture de stock !");
-            }
+            $(this).hide();
         }
-        renderCart();
-    }
+    });
+});
 
-    function removeCartItem(index) {
-        panier.splice(index, 1);
-        renderCart();
-    }
-
-    function clearCart() {
-        if (panier.length === 0) return;
-        if (confirm("Voulez-vous vraiment vider le panier ?")) {
-            panier.length = 0;
-            renderCart();
-        }
-    }
-
-    function changeQty(index, delta) {
-        const item = panier[index];
-        const newQte = item.qte + delta;
-        
-        if (newQte > 0 && newQte <= item.maxStock) {
-            item.qte = newQte;
-        } else if (newQte > item.maxStock) {
-            alert("Stock maximum atteint !");
-        } else if (newQte <= 0) {
-            removeCartItem(index);
+function addToCart(ref, nom, prix, stock) {
+    const exist = panier.find(p => p.ref === ref);
+    if (exist) {
+        if (exist.qte < stock) {
+            exist.qte++;
+        } else {
+            alert('⚠️ Stock maximum atteint');
             return;
         }
-        renderCart();
+    } else {
+        panier.push({ ref, nom, prix: parseFloat(prix), qte: 1, stock: parseInt(stock) });
+    }
+    renderCart();
+    pulseCard(ref);
+}
+
+// Petit effet visuel sur la card quand le produit est ajouté au panier
+function pulseCard(ref) {
+    if (typeof CSS !== 'undefined' && CSS.escape) {
+        const card = $(`.product-card[data-refval="${CSS.escape(ref)}"]`);
+        card.addClass('just-added');
+        setTimeout(() => card.removeClass('just-added'), 350);
+    }
+}
+
+// Met à jour le badge de quantité affiché sur chaque card produit
+function updateProductBadges() {
+    $('.product-card').each(function() {
+        const ref = $(this).data('refval');
+        const item = panier.find(p => String(p.ref) === String(ref));
+        const badge = $(this).find('.cart-qty-badge');
+        if (item) {
+            badge.text(item.qte).css('display', 'flex');
+        } else {
+            badge.hide();
+        }
+    });
+}
+
+function renderCart() {
+    const container = $('#cartItems');
+    const emptyMsg = $('#emptyMsg');
+
+    if (panier.length === 0) {
+        emptyMsg.show();
+        container.find('.cart-item').remove();
+        updateTotals();
+        updateProductBadges();
+        return;
     }
 
-    function renderCart() {
-        const container = $('#cartItems');
-        if (panier.length === 0) {
-            container.html(`
-                <div class="text-center text-muted my-5" id="emptyCartMsg">
-                    <i class="la la-shopping-basket la-3x mb-2"></i>
-                    <p>Le panier est vide</p>
-                </div>
-            `);
-            calculateTotals();
-            return;
-        }
+    emptyMsg.hide();
+    container.find('.cart-item').remove();
 
-        let html = '';
-        panier.forEach((item, index) => {
-            const totalItem = item.prix * item.qte;
-            html += `
+    panier.forEach((item, idx) => {
+        const html = `
             <div class="cart-item">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="cart-item-title text-truncate" style="max-width: 200px; font-size:13px;">${item.nom}</div>
-                    <i class="la la-trash remove-icon" onclick="removeCartItem(${index})"></i>
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <strong style="font-size:14px; flex:1; line-height:1.3;">${item.nom}</strong>
+                    <i class="la la-times text-danger ml-2" style="cursor:pointer; font-size:20px;" onclick="removeItem(${idx})"></i>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-muted" style="font-size:12px;">${item.prix.toLocaleString()} F x ${item.qte}</div>
                     <div class="qty-controls">
-                        <button class="qty-btn" onclick="changeQty(${index}, -1)"><i class="la la-minus"></i></button>
-                        <input type="text" class="qty-input" value="${item.qte}" readonly>
-                        <button class="qty-btn" onclick="changeQty(${index}, 1)"><i class="la la-plus"></i></button>
+                        <button class="qty-btn" onclick="updateQty(${idx}, -1)">−</button>
+                        <input type="number" class="qty-input" value="${item.qte}" min="1" max="${item.stock}" onchange="setQty(${idx}, this.value)">
+                        <button class="qty-btn" onclick="updateQty(${idx}, 1)">+</button>
                     </div>
+                    <strong style="color:#ff9b44; font-size:15px;">${(item.prix * item.qte).toLocaleString()} F</strong>
                 </div>
-                <div class="text-right mt-1 font-weight-bold" style="font-size:14px;">${totalItem.toLocaleString()} F</div>
-            </div>`;
-        });
-        
-        container.html(html);
-        
-        // Scroll to bottom of cart
-        container.scrollTop(container[0].scrollHeight);
-        
-        calculateTotals();
-    }
-
-    function calculateTotals() {
-        totalHT = panier.reduce((sum, item) => sum + (item.prix * item.qte), 0);
-        
-        const taxeSelect = $('#taxe-select option:selected');
-        const taux = parseFloat(taxeSelect.data('taux')) || 0;
-        const action = taxeSelect.data('action') || 'ajouter';
-        let remise = parseFloat($('#remise').val()) || 0;
-
-        let taxe = totalHT * (taux / 100);
-        if (action === 'soustraire') taxe = -taxe;
-
-        const ttc = totalHT + taxe - remise;
-           const payeInput = $('#montant-paye').val();
-        let paye = parseFloat(payeInput) || 0;
-        let reste = ttc - paye;
-
-        $('#total-ht').text(totalHT.toLocaleString() + ' F');
-        $('#montant-taxe').text((taxe > 0 ? '+ ' : '') + taxe.toLocaleString() + ' F');
-        $('#total-ttc').text(ttc.toLocaleString() + ' F');
-        
-        const changeContainer = $('#reste-apayer-container');
-        const changeLabel = $('#reste-apayer');
-
-        if (panier.length > 0) {
-            changeContainer.show();
-            if (reste > 0) {
-                changeLabel.removeClass('badge-success').addClass('badge-danger');
-                changeLabel.html('<i class="la la-exclamation-circle"></i> Reste à payer: ' + reste.toLocaleString() + ' F');
-            } else if (reste < 0) {
-                changeLabel.removeClass('badge-danger').addClass('badge-success');
-                changeLabel.html('<i class="la la-check-circle"></i> Monnaie à rendre: ' + Math.abs(reste).toLocaleString() + ' F');
-            } else {
-                changeLabel.removeClass('badge-danger').addClass('badge-success');
-                changeLabel.html('<i class="la la-check-circle"></i> Payé en totalité');
-            }
-        } else {
-            changeContainer.hide();
-        }
-    }
-
-    $('#taxe-select, #remise, #montant-paye').on('input change', calculateTotals);
-
-    $('#btn-valider').click(function() {
-        if (panier.length === 0) return alert('Le panier est vide !');
-
-        const btn = $(this);
-        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Traitement...');
-
-        const data = {
-            action: 'valider_vente',
-            panier: JSON.stringify(panier),
-            client_id: $('#client-select').val(),
-            taxe_code: $('#taxe-select').val(),
-            remise: $('#remise').val(),
-            montant_paye: $('#montant-paye').val() || 0,
-            mode_paiement: $('#mode-paiement').val()
-        };
-
-        const basePath = window.location.pathname.includes('gestion_commerciale') ? '/gestion_commerciale' : '';
-        $.post(basePath + '/vente/valider', data, function(res) {
-            if (res.success) {
-                // Rediriger vers l'impression de la facture nouvellement ajoutée
-                window.open(basePath + '/facture/imprimer?id=' + res.facture, '_blank');
-                // Recharger la page (vider le panier)
-                location.reload();
-            } else {
-                alert('Erreur: ' + res.error);
-                btn.prop('disabled', false).html('<i class="la la-check-circle"></i> ENCAISSER');
-            }
-        }, 'json').fail(function() {
-            alert("Erreur de communication avec le serveur.");
-            btn.prop('disabled', false).html('<i class="la la-check-circle"></i> ENCAISSER');
-        });
+            </div>
+        `;
+        container.append(html);
     });
 
+    updateTotals();
+    updateProductBadges();
+}
+
+function updateQty(idx, delta) {
+    const item = panier[idx];
+    const newQty = item.qte + delta;
+    if (newQty > 0 && newQty <= item.stock) {
+        item.qte = newQty;
+        renderCart();
+    } else if (newQty > item.stock) {
+        alert('⚠️ Stock maximum : ' + item.stock);
+    }
+}
+
+function setQty(idx, val) {
+    const qty = parseInt(val);
+    const item = panier[idx];
+    if (qty > 0 && qty <= item.stock) {
+        item.qte = qty;
+        renderCart();
+    } else {
+        alert('⚠️ Quantité invalide');
+        renderCart();
+    }
+}
+
+function removeItem(idx) {
+    panier.splice(idx, 1);
+    renderCart();
+}
+
+function clearCart() {
+    if (panier.length && confirm('Vider le panier ?')) {
+        panier.length = 0;
+        renderCart();
+    }
+}
+
+// Gestion taxes multiples
+$('#taxe-select').on('change', function() {
+    const code = $(this).val();
+    if (!code) return;
+
+    const opt = $(this).find('option:selected');
+    const titre = opt.data('titre');
+    const taux = parseFloat(opt.data('taux'));
+    const action = opt.data('action');
+
+    if (taxes.find(t => t.code === code)) {
+        alert('⚠️ Taxe déjà appliquée');
+        $(this).val('');
+        return;
+    }
+
+    taxes.push({ code, titre, taux, action });
+    $(this).val('');
+    renderTaxes();
+    updateTotals();
+});
+
+function renderTaxes() {
+    const container = $('#taxesBadges');
+    container.empty();
+
+    taxes.forEach((tax, idx) => {
+        const badge = `
+            <span class="tax-badge">
+                ${tax.titre} (${tax.taux}%)
+                <span class="remove-tax" onclick="removeTax(${idx})" title="Retirer">✕</span>
+            </span>
+        `;
+        container.append(badge);
+    });
+}
+
+function removeTax(idx) {
+    taxes.splice(idx, 1);
+    renderTaxes();
+    updateTotals();
+}
+
+function updateTotals() {
+    const ht = panier.reduce((sum, item) => sum + (item.prix * item.qte), 0);
+
+    let totalTaxes = 0;
+    taxes.forEach(tax => {
+        const calc = ht * (tax.taux / 100);
+        totalTaxes += tax.action === 'soustraire' ? -calc : calc;
+    });
+
+    const remise = parseFloat($('#remise').val()) || 0;
+    const ttc = ht + totalTaxes - remise;
+
+    $('#totalHT').text(Math.round(ht).toLocaleString() + ' F');
+    $('#totalTaxes').text(Math.round(totalTaxes).toLocaleString() + ' F');
+    $('#totalTTC').text(Math.round(ttc).toLocaleString() + ' F');
+
+    calculerMonnaie();
+}
+
+$('#remise, #montantPaye').on('input', updateTotals);
+
+function calculerMonnaie() {
+    const paye = parseFloat($('#montantPaye').val()) || 0;
+    const ht = panier.reduce((sum, item) => sum + (item.prix * item.qte), 0);
+    const totalTaxesCalc = taxes.reduce((sum, tax) => {
+        const calc = ht * (tax.taux / 100);
+        return sum + (tax.action === 'soustraire' ? -calc : calc);
+    }, 0);
+    const remise = parseFloat($('#remise').val()) || 0;
+    const ttc = ht + totalTaxesCalc - remise;
+
+    const reste = ttc - paye;
+    const div = $('#monnaieDiv');
+    const text = $('#monnaieText');
+
+    if (paye > 0) {
+        div.show();
+        if (reste > 0) {
+            text.removeClass('badge-success badge-warning').addClass('badge-danger');
+            text.text(`Reste à payer : ${Math.round(reste).toLocaleString()} F`);
+        } else if (reste < 0) {
+            text.removeClass('badge-danger badge-warning').addClass('badge-success');
+            text.text(`Monnaie à rendre : ${Math.round(Math.abs(reste)).toLocaleString()} F`);
+        } else {
+            text.removeClass('badge-danger badge-success').addClass('badge-warning');
+            text.text('✓ Montant exact');
+        }
+    } else {
+        div.hide();
+    }
+}
+
+// Validation vente
+$('#btnValider').on('click', function() {
+    if (panier.length === 0) {
+        alert('⚠️ Le panier est vide');
+        return;
+    }
+
+    const paye = parseFloat($('#montantPaye').val()) || 0;
+    if (paye <= 0) {
+        alert('⚠️ Veuillez saisir le montant payé');
+        $('#montantPaye').focus();
+        return;
+    }
+
+    const data = {
+        action: 'valider_vente',
+        panier: JSON.stringify(panier),
+        client_id: $('#client-select').val(),
+        taxes_array: JSON.stringify(taxes),  // Envoyer toutes les taxes comme array
+        remise: $('#remise').val() || 0,
+        montant_paye: paye,
+        mode_paiement: $('#modePaiement').val()
+    };
+
+    $(this).prop('disabled', true).html('<i class="la la-spinner la-spin"></i> Traitement...');
+
+    const basePath = window.location.pathname.includes('gestion_commerciale') ? '/gestion_commerciale' : '';
+    $.post(basePath + '/vente/valider', data, function(res) {
+        if (res.success) {
+            // Vider le panier
+            panier.length = 0;
+            taxes.length = 0;
+            $('#remise').val(0);
+            $('#montantPaye').val('');
+            renderCart();
+            renderTaxes();
+
+            // Ouvrir la Facture Normalisée Électronique (FNE)
+            const factureUrl = basePath + '/facture/imprimer_fne?id=' + encodeURIComponent(res.facture);
+            const printWindow = window.open(factureUrl, '_blank', 'width=900,height=800');
+
+            // Message de confirmation avec numéro fiscal
+            setTimeout(function() {
+                let message = '✅ Vente enregistrée avec succès !\n\n';
+                message += 'Facture : ' + res.facture + '\n';
+                if (res.numero_fiscal) {
+                    message += 'N° Fiscal FNE : ' + res.numero_fiscal + '\n';
+                }
+                message += '\nLa Facture Normalisée Électronique s\'ouvre automatiquement.';
+                alert(message);
+            }, 300);
+        } else {
+            alert('❌ Erreur : ' + (res.error || 'Erreur inconnue'));
+        }
+        $('#btnValider').prop('disabled', false).html('<i class="la la-check-circle"></i> ENCAISSER MAINTENANT');
+    }, 'json').fail(function() {
+        alert('❌ Erreur de communication avec le serveur');
+        $('#btnValider').prop('disabled', false).html('<i class="la la-check-circle"></i> ENCAISSER MAINTENANT');
+    });
+});
 </script>
+
 </body>
 </html>

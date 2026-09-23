@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -A 30 \"CREATE TABLE.*\\\\`commandes\\\\`\" database/gestion_commerciale.sql)",
+      "Bash(php *)",
+      "Bash(grep -n 'data\\\\['\\\\''produits'\\\\''\\\\]\\\\|foreach.*produits\\\\|$produits' C:/wamp64/www/gestion_commerciale/views/vente/effectuer.php)",
+      "Bash(grep -n \"INSERT INTO ventes\\\\|INSERT INTO \\\\`ventes\\\\`\" \"C:\\\\wamp64\\\\www\\\\gestion_commerciale\\\\models\\\\vente.php\")"
+    ]
+  }
+}

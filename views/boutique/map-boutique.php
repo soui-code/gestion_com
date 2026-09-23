@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, produit-scalable=0">
     <title>Factures</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -79,44 +83,46 @@
         json_encode($boutiques, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
     ?>;
 
+    let hasMarkers = false;
+    let bounds = [];
+
     boutiques.forEach(function(b) {
+        if (!b.latitude || !b.longitude || b.latitude == 0 || b.longitude == 0) return;
 
-        if (!b.latitude || !b.longitude) return;
-
-        // Récupération produits depuis JSON
-        let produits = [];
-
-        try {
-            produits = JSON.parse(b.produit_json);
-        } catch (e) {
-            produits = [];
-        }
+        hasMarkers = true;
+        bounds.push([parseFloat(b.latitude), parseFloat(b.longitude)]);
 
         // Contenu popup
         let popupContent = `
-            <b>${b.nom_boutique}</b><br>
-            Téléphone : ${b.telephone_boutique}<br><br>
-            <b>Produits :</b><br>
+            <div style="min-width:200px;">
+                <h5 style="margin:0 0 10px 0;color:#007bff;">${b.nom_boutique || 'Boutique'}</h5>
+                <p style="margin:5px 0;"><i class="fa fa-phone"></i> ${b.telephone_boutique || 'N/A'}</p>
+                <p style="margin:5px 0;"><i class="fa fa-map-marker"></i> ${parseFloat(b.latitude).toFixed(6)}, ${parseFloat(b.longitude).toFixed(6)}</p>
+            </div>
         `;
 
-        if (produits.length === 0) {
-            popupContent += "Aucun produit";
-        } else {
-            produits.forEach(p => {
-                popupContent += "- " + p.designation + " (" + p.prix_vente + " F CFA)<br>";
-            });
-        }
-            var boutiqueIcon = L.divIcon({
-    html: "🏪",          
-    className: "emoji-icon",       
-    iconSize: [300, 300],  
-    iconAnchor: [150, 20] 
-});
+        var boutiqueIcon = L.divIcon({
+            html: "🏪",
+            className: "emoji-icon",
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -40]
+        });
+
         // Marqueur
-        L.marker([b.latitude, b.longitude], {icon: boutiqueIcon})
+        L.marker([parseFloat(b.latitude), parseFloat(b.longitude)], {icon: boutiqueIcon})
             .addTo(map)
             .bindPopup(popupContent);
     });
+
+    // Ajuster la vue pour inclure tous les marqueurs
+    if (hasMarkers && bounds.length > 0) {
+        if (bounds.length === 1) {
+            map.setView(bounds[0], 13);
+        } else {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
+    }
 </script>
 
 </body>

@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, produit-scalable=0">
     <title>Data Tables - HRMS admin template</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <!-- Favicon / CSS (inchangés) -->
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
@@ -12,6 +16,7 @@
     <link rel="stylesheet" href="../assets/css/line-awesome.min.css">
     <link rel="stylesheet" href="../assets/css/dataTables.bootstrap4.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <div class="main-wrapper">
@@ -33,6 +38,9 @@
                         <div class="col-auto float-right ml-auto">
                             <a href="#" class="btn add-btn" data-toggle="modal" data-target="#add_produit">
                                 <i class="fa fa-plus"></i> Ajouter un produit
+                            </a>
+                            <a href="#" id="btn-export-excel" class="btn btn-success">
+                                <i class="fa fa-file-excel-o"></i> Exporter Excel
                             </a>
                         </div>
                     </div>
@@ -76,9 +84,9 @@
                                         <tbody>
                                             <?php if (!empty($result)) {
                                                 foreach ($result as $key => $p) { ?>
-                                            <tr>
+                                            <tr data-description="<?= htmlspecialchars($p['description'] ?? '') ?>">
                                                 <td><?= htmlspecialchars($p['reference']) ?></td>
-                                                <td>
+                                                <td data-order="<?= htmlspecialchars($p['designation']) ?>" data-search="<?= htmlspecialchars($p['designation']) ?>" data-export="<?= htmlspecialchars($p['designation']) ?>">
     <a href="#" class="text-success font-weight-bold approvisionnement-product"
        data-reference="<?= htmlspecialchars($p['reference']) ?>"
        data-designation="<?= htmlspecialchars($p['designation']) ?>"
@@ -92,23 +100,23 @@
                                                 <td><?= htmlspecialchars($p['prix_vente']) ?> Fr</td>
                                                 <td><?= htmlspecialchars($p['stock']) ?></td>
                                                 <td><?= htmlspecialchars($p['stock_alert']) ?></td>
-                                                <td>
+                                                <td data-export="<?= $p['photo'] ? 'Oui' : 'Non' ?>">
                                                     <?php if ($p['photo']) { ?>
                                                         <img src="data:<?= $p['photo_type'] ?>;base64,<?= base64_encode($p['photo']) ?>" width="50" height="50" alt="Produit">
                                                     <?php } else { echo "Pas de photo"; } ?>
                                                 </td>
                                                 <td><?= htmlspecialchars($p['etat']) ?></td>
-                                                <td>
+                                                <td data-export="">
                                                                                                        <a href="#" class="text-secondary mr-3 edit-product"
                                                        data-reference="<?= htmlspecialchars($p['reference']) ?>"
                                                        data-designation="<?= htmlspecialchars($p['designation']) ?>"
-                                                       data-id_categorie="<?= htmlspecialchars($p['id_categorie']) ?>"
-                                                       data-id_fournisseur="<?= htmlspecialchars($p['id_fournisseur']) ?>"
+                                                       data-id_categorie="<?= htmlspecialchars($p['id_categorie'] ?? '') ?>"
+                                                       data-id_fournisseur="<?= htmlspecialchars($p['id_fournisseur'] ?? '') ?>"
                                                        data-prix_achat="<?= htmlspecialchars($p['prix_achat']) ?>"
                                                        data-prix_vente="<?= htmlspecialchars($p['prix_vente']) ?>"
                                                        data-stock="<?= htmlspecialchars($p['stock']) ?>"
                                                        data-stock_alert="<?= htmlspecialchars($p['stock_alert']) ?>"
-                                                       data-description="<?= htmlspecialchars($p['description']) ?>"
+                                                       data-description="<?= htmlspecialchars($p['description'] ?? '') ?>"
                                                        data-etat="<?= htmlspecialchars($p['etat']) ?>">
                                                         <i class="la la-edit"></i> Modifier
                                                     </a>
@@ -139,6 +147,7 @@
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <form action="" method="POST">
+                <?= $csrf_field ?? '' ?>
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
                          Approvisionner le stock
@@ -186,6 +195,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <form action="" method="POST" enctype="multipart/form-data">
+                <?= $csrf_field ?? '' ?>
                 <div class="modal-header">
                     <h5 class="modal-title" id="addProductModalLabel">Ajouter un nouveau produit</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -299,6 +309,7 @@
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <form action="" method="POST" enctype="multipart/form-data">
+                <?= $csrf_field ?? '' ?>
                 <div class="modal-header">
                     <h5 class="modal-title">
                         Modifier le produit
@@ -430,6 +441,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <div class="modal-body text-center">
                         <h4>Confirmer la suppression</h4>
                         <p>Êtes-vous sûr de vouloir supprimer le produit <strong id="delete_designation"></strong> ?</p>
@@ -456,8 +468,66 @@
     <script>
         $(document).ready(function () {
             var table = $('.datatables').DataTable({
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json' }
+                language: {
+                    "search": "Rechercher :",
+                    "lengthMenu": "Afficher _MENU_ éléments",
+                    "info": "Affichage de _START_ à _END_ sur _TOTAL_ produits",
+                    "infoEmpty": "Aucun produit",
+                    "infoFiltered": "(filtré de _MAX_ produits au total)",
+                    "paginate": {
+                        "first": "Premier",
+                        "last": "Dernier",
+                        "next": "Suivant",
+                        "previous": "Précédent"
+                    },
+                    "zeroRecords": "Aucun produit trouvé",
+                    "emptyTable": "Aucune donnée disponible"
+                },
+                "pageLength": 10,
+                "ordering": true,
+                "order": [[1, 'asc']],
+                "columnDefs": [
+                    {
+                        "targets": 1,
+                        "type": "string",
+                        "orderDataType": "dom-data-order",
+                        "render": function(data, type, row) {
+                            if (type === 'export') {
+                                // Extraire le texte uniquement
+                                var temp = $('<div>').html(data);
+                                return temp.find('a').text().trim() || temp.text().trim();
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        "targets": 8,
+                        "render": function(data, type, row) {
+                            if (type === 'export') {
+                                return data && data.indexOf('<img') > -1 ? 'Oui' : 'Non';
+                            }
+                            return data;
+                        }
+                    },
+                    {
+                        "targets": 10,
+                        "orderable": false,
+                        "render": function(data, type, row) {
+                            if (type === 'export') {
+                                return '';
+                            }
+                            return data;
+                        }
+                    }
+                ]
             });
+
+            // Custom sorting pour data-order
+            $.fn.dataTable.ext.order['dom-data-order'] = function(settings, col) {
+                return this.api().column(col, {order:'index'}).nodes().map(function(td, i) {
+                    return $(td).attr('data-order') || $(td).text();
+                });
+            };
 
             $('#filtre_categorie').on('change', function () {
                 var search = this.value ? '^' + $.fn.dataTable.util.escapeRegex(this.value) + '$' : '';
@@ -514,6 +584,52 @@
 
         $('#approvisionnementModal').modal('show');
     });
+            // --- Export Excel ---
+            $('#btn-export-excel').on('click', function (e) {
+                e.preventDefault();
+                const wsData = [['Référence', 'Désignation', 'Catégorie', 'Fournisseur', 'Prix Achat', 'Prix Vente', 'Stock', 'Stock Alerte', 'Description', 'État']];
+                table.rows({ search: 'applied' }).every(function () {
+                    const row = this.node();
+                    const $row = $(row);
+                    const $cells = $row.find('td');
+
+                    // Référence (colonne 0)
+                    const reference = $cells.eq(0).text().trim();
+
+                    // Désignation (colonne 1) - extraire depuis data-export ou le lien
+                    const designation = $cells.eq(1).attr('data-export') || $cells.eq(1).find('a').text().trim();
+
+                    // Catégorie (colonne 2)
+                    const categorie = $cells.eq(2).text().trim();
+
+                    // Fournisseur (colonne 3)
+                    const fournisseur = $cells.eq(3).text().trim();
+
+                    // Prix Achat (colonne 4)
+                    const prixAchat = $cells.eq(4).text().trim();
+
+                    // Prix Vente (colonne 5)
+                    const prixVente = $cells.eq(5).text().trim();
+
+                    // Stock (colonne 6)
+                    const stock = $cells.eq(6).text().trim();
+
+                    // Stock Alerte (colonne 7)
+                    const stockAlert = $cells.eq(7).text().trim();
+
+                    // Description - récupérée depuis l'attribut data-description de la ligne <tr>
+                    const description = $row.attr('data-description') || '';
+
+                    // État (colonne 9)
+                    const etat = $cells.eq(9).text().trim();
+
+                    wsData.push([reference, designation, categorie, fournisseur, prixAchat, prixVente, stock, stockAlert, description, etat]);
+                });
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Produits');
+                XLSX.writeFile(wb, 'produits.xlsx');
+            });
         });
     </script>
 </body>

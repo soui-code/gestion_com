@@ -5,6 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <title>Tableau de Bord - Gestion Commerciale</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="<?= url('/manifest.json') ?>">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="<?= url('/assets/icons/icon-192.png') ?>">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -12,6 +16,40 @@
     <link rel="stylesheet" href="../assets/css/line-awesome.min.css">
     <link rel="stylesheet" href="../assets/css/style.css">
     <link rel="stylesheet" href="../assets/css/dataTables.bootstrap4.min.css">
+    <style>
+        /* Cards "chiffre d'affaires" : même taille quelle que soit la longueur du montant */
+        .stats-ca-row {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .stats-ca-row .card {
+            height: 100%;
+            min-height: 130px;
+            display: flex;
+            flex-direction: column;
+        }
+        .stats-ca-row .card-body {
+            flex: 1 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            overflow: hidden;
+        }
+        .stats-ca-row .card-body h4 {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+        .stats-ca-row .card-body h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            line-height: 1.2;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
     <div class="main-wrapper">
@@ -62,7 +100,7 @@
                     <div class="col-md-6 col-sm-6 col-lg-6 col-xl-3">
                         <div class="card dash-widget">
                             <div class="card-body">
-                                <span class="dash-widget-icon bg-info"><i class="fa fa-home"></i></span>
+                                <span class="dash-widget-icon bg-info"><i class="la la-store"></i></span>
                                 <div class="dash-widget-info">
                                     <h3><?= $stats['boutiques'] ?></h3>
                                     <span>Boutiques</span>
@@ -85,8 +123,16 @@
                 </div>
 
                 <!-- Chiffre d'affaires -->
-                <div class="row">
-                    <div class="col-md-4">
+                <div class="row stats-ca-row">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h4 class="text-muted">Ventes du jour</h4>
+                                <h2 class="text-info"><?= $stats['ca_jour'] ?> FCFA</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
                                 <h4 class="text-muted">Chiffre d'affaires total</h4>
@@ -94,7 +140,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
                                 <h4 class="text-muted">Chiffre d'affaires du mois </h4>
@@ -102,7 +148,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="card">
                             <div class="card-body text-center">
                                 <h4 class="text-muted">Valeur globale du stock</h4>
@@ -111,7 +157,7 @@
                         </div>
                     </div>
                 </div>
-
+                <br>
                 <div class="row">
                     <!-- Dernières ventes -->
                     <div class="col-md-6 d-flex">
@@ -276,9 +322,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+// Graphique 1 : Ventes mensuelles
 fetch('<?= BASE_URL ?>/utilisateur/ventes_mensuelles')
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+        return r.json();
+    })
     .then(data => {
+        console.log('Données ventes mensuelles:', data);
         new Chart(document.getElementById('ventesMensuellesChart'), {
             type: 'line',
             data: {
@@ -334,13 +385,23 @@ fetch('<?= BASE_URL ?>/utilisateur/ventes_mensuelles')
             }
         });
     })
-    .catch(err => console.error('Erreur graphique:', err));
-</script>
-    <script>
-// === Graphique 2 : Répartition par mode de paiement (doughnut) ===
+    .catch(err => {
+        console.error('Erreur graphique ventes mensuelles:', err);
+        document.getElementById('ventesMensuellesChart').parentElement.innerHTML = '<p class="text-danger text-center">Impossible de charger le graphique</p>';
+    });
+
+// Graphique 2 : Répartition par mode de paiement (doughnut)
 fetch('<?= BASE_URL ?>/utilisateur/modes_paiement')
-    .then(response => response.json())
+    .then(r => {
+        if (!r.ok) throw new Error('Erreur HTTP ' + r.status);
+        return r.json();
+    })
     .then(data => {
+        console.log('Données modes paiement:', data);
+        if (!data.modes || data.modes.length === 0) {
+            document.getElementById('modePaiementChart').parentElement.innerHTML = '<p class="text-muted text-center">Aucune donnée disponible</p>';
+            return;
+        }
         new Chart(document.getElementById('modePaiementChart'), {
             type: 'doughnut',
             data: {
@@ -366,6 +427,10 @@ fetch('<?= BASE_URL ?>/utilisateur/modes_paiement')
                 }
             }
         });
+    })
+    .catch(err => {
+        console.error('Erreur graphique modes paiement:', err);
+        document.getElementById('modePaiementChart').parentElement.innerHTML = '<p class="text-danger text-center">Impossible de charger le graphique</p>';
     });
 </script>
 	

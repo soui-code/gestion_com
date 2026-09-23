@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taxes</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -106,6 +110,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <div class="modal-header">
                         <h5 class="modal-title">Ajouter une nouvelle taxe</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -150,6 +155,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <div class="modal-header">
                         <h5 class="modal-title">Modifier la taxe</h5>
                         <button type="button" class="close" data-dismiss="modal">&times;</button>
@@ -196,6 +202,7 @@
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <input type="hidden" name="sai_code_taxe" id="delete_code">
                     <div class="modal-body text-center">
                         <h5>Confirmer la suppression</h5>
@@ -222,7 +229,24 @@
     <script>
         $(document).ready(function () {
             $('.datatables').DataTable({
-                language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/fr-FR.json' }
+                "language": {
+                    "search": "Rechercher :",
+                    "lengthMenu": "Afficher _MENU_ éléments",
+                    "info": "Affichage de _START_ à _END_ sur _TOTAL_ taxes",
+                    "infoEmpty": "Aucune taxe",
+                    "infoFiltered": "(filtré de _MAX_ taxes au total)",
+                    "paginate": {
+                        "first": "Premier",
+                        "last": "Dernier",
+                        "next": "Suivant",
+                        "previous": "Précédent"
+                    },
+                    "zeroRecords": "Aucune taxe trouvée",
+                    "emptyTable": "Aucune donnée disponible"
+                },
+                "pageLength": 10,
+                "ordering": true,
+                "order": [[1, 'asc']]
             });
 
             // Modification

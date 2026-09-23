@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Boutiques</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -137,6 +141,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <div class="modal-header">
                         <h5 class="modal-title">Ajouter une boutique</h5>
                         <button type="button" class="close" data-dismiss="modal">×</button>
@@ -175,18 +180,17 @@
                         <div id="map"></div>
 
                         <div class="form-group">
-                            <label>Importer des produits via Excel</label>
+                            <label>Importer des produits via Excel <small class="text-muted">(optionnel)</small></label>
                             <div class="custom-file">
                                 <input type="file" id="excel_import" class="custom-file-input" accept=".xlsx, .xls">
-                                <label class="custom-file-label">Choisir un fichier...</label>
+                                <label class="custom-file-label">Choisir un fichier Excel (facultatif)...</label>
                             </div>
-                            <small class="text-muted">Format: Colonne A (Désignation), Colonne B (Prix de vente)</small>
+                            <small class="text-muted">Colonnes: A(Désignation), B(Réf), C(Prix achat), D(Prix vente), E(Stock), F(Alert), G(Description), H(Etat)</small>
                         </div>
 
                         <div class="form-group">
-                            <label>Produits associés (JSON) <small class="text-muted">facultatif</small></label>
-                            <textarea name="sai_produit_json" id="add_produit_json" class="form-control" rows="4" placeholder='[{"designation":"Produit A","prix_vente":5000},{"designation":"Produit B","prix_vente":3000}]'></textarea>
-                            <small class="form-text text-muted">Format JSON attendu : tableau d'objets avec designation et prix_vente</small>
+                            <label>Produits associés (JSON) <small class="text-muted">— Généré automatiquement par l'import Excel</small></label>
+                            <textarea name="sai_produit_json" id="add_produit_json" class="form-control" rows="3" placeholder='Laissez vide si pas d\'import Excel' readonly style="background:#f8f9fa;"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -213,6 +217,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <input type="hidden" name="sai_code_boutique" id="edit_code">
                     <div class="modal-header">
                         <h5 class="modal-title">Modifier la boutique</h5>
@@ -284,6 +289,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <input type="hidden" name="sai_code_boutique" id="delete_code">
                     <div class="modal-body text-center py-4">
                         <h5>Confirmer la suppression</h5>
@@ -372,7 +378,7 @@
                 $(`#${fileInputId}`).on('change', function(e) {
                     const file = e.target.files[0];
                     if (!file) return;
-                    
+
                     $(this).next('.custom-file-label').html(file.name);
 
                     const reader = new FileReader();
@@ -383,12 +389,43 @@
                         const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
                         const products = [];
+                        let headerSkipped = false;
+
                         jsonData.forEach((row, index) => {
-                            if (index === 0 && (row[0] === 'Désignation' || row[0] === 'Designation' || row[0] === 'Nom')) return; // Skip header
-                            if (row[0] && row[1]) {
-                                products.push({ designation: row[0].toString(), prix_vente: parseFloat(row[1]) });
+                            // Ignorer les lignes vides
+                            if (!row || row.length === 0 || !row[0]) return;
+
+                            // Détecter et ignorer la ligne d'en-tête
+                            const firstCell = (row[0] || '').toString().toLowerCase().trim();
+                            if (!headerSkipped && (firstCell === 'référence' || firstCell === 'reference' ||
+                                firstCell === 'désignation' || firstCell === 'designation' || firstCell === 'nom')) {
+                                headerSkipped = true;
+                                return;
                             }
+
+                            // Format attendu: Référence | Désignation | Prix Achat | Prix Vente | Stock | Stock Alerte | Description | État
+                            const reference = (row[0] || '').toString().trim();
+                            const designation = (row[1] || '').toString().trim();
+
+                            // Ne pas ajouter si référence ou désignation vide
+                            if (!reference || !designation) return;
+
+                            products.push({
+                                reference:    reference,
+                                designation:  designation,
+                                prix_achat:   parseFloat((row[2] || '').toString().replace(/[^0-9.]/g, '')) || 0,
+                                prix_vente:   parseFloat((row[3] || '').toString().replace(/[^0-9.]/g, '')) || 0,
+                                stock:        parseInt((row[4] || '').toString().replace(/[^0-9]/g, '')) || 0,
+                                stock_alert:  parseInt((row[5] || '').toString().replace(/[^0-9]/g, '')) || 5,
+                                description:  (row[6] || '').toString().trim(),
+                                etat:         (row[7] || 'actif').toString().toLowerCase() === 'actif' ? 'actif' : 'inactif'
+                            });
                         });
+
+                        if (products.length === 0) {
+                            alert('Aucun produit trouvé dans le fichier Excel. Vérifiez le format.');
+                            return;
+                        }
 
                         $(`#${textareaId}`).val(JSON.stringify(products, null, 2));
                     };
@@ -409,8 +446,24 @@
                 $('#edit_telephone').val(btn.data('telephone'));
                 $('#edit_latitude').val(btn.data('latitude'));
                 $('#edit_longitude').val(btn.data('longitude'));
-                $('#edit_produits').val(btn.data('produits'));
+
+                // Utiliser .attr() au lieu de .data() pour éviter le parsing automatique du JSON
+                const produitJson = btn.attr('data-produits') || '';
+                $('#edit_produits').val(produitJson);
+
                 $('#edit_etat').val(btn.data('etat'));
+
+                // Initialiser la carte d'édition avec les coordonnées
+                if (btn.data('latitude') && btn.data('longitude')) {
+                    setTimeout(function() {
+                        if (typeof editMap !== 'undefined') {
+                            editMap.setView([btn.data('latitude'), btn.data('longitude')], 13);
+                            if (typeof editMarker !== 'undefined') {
+                                editMarker.setLatLng([btn.data('latitude'), btn.data('longitude')]);
+                            }
+                        }
+                    }, 300);
+                }
 
                 $('#editBoutiqueModal').modal('show');
             });

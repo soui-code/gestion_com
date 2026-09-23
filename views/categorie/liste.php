@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Boutiques</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -95,6 +99,7 @@
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="">
+                        <?= $csrf_field ?? '' ?>
                         <div class="form-group">
                             <label>Nom de la catégorie <span class="text-danger">*</span></label>
                             <input class="form-control" type="text" name="sai_nom" required>
@@ -132,6 +137,7 @@
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="">
+                        <?= $csrf_field ?? '' ?>
                         <input type="hidden" name="sai_id" id="edit_id">
                         <div class="form-group">
                             <label>Nom <span class="text-danger">*</span></label>
@@ -169,6 +175,7 @@
                     </div>
                     <div class="modal-btn delete-action">
                         <form method="POST" action="">
+                            <?= $csrf_field ?? '' ?>
                             <input type="hidden" name="sai_id" id="delete_id">
                             <div class="row">
                                 <div class="col-6">
@@ -197,11 +204,37 @@
     <script src="../assets/js/bootstrap.min.js"></script>
     <script src="../assets/js/jquery.slimscroll.min.js"></script>
     <script src="../assets/js/jquery.dataTables.min.js"></script>
+    <script src="../assets/js/jquery.dataTables.min.js"></script>
     <script src="../assets/js/dataTables.bootstrap4.min.js"></script>
     <script src="../assets/js/app.js"></script>
 
 <script>
 $(document).ready(function() {
+    // Initialiser DataTables avec recherche et pagination
+    $('.datatable').DataTable({
+        "language": {
+            "search": "Rechercher :",
+            "lengthMenu": "Afficher _MENU_ éléments",
+            "info": "Affichage de _START_ à _END_ sur _TOTAL_ catégories",
+            "infoEmpty": "Aucune catégorie",
+            "infoFiltered": "(filtré de _MAX_ catégories au total)",
+            "paginate": {
+                "first": "Premier",
+                "last": "Dernier",
+                "next": "Suivant",
+                "previous": "Précédent"
+            },
+            "zeroRecords": "Aucune catégorie trouvée",
+            "emptyTable": "Aucune donnée disponible"
+        },
+        "pageLength": 10,
+        "ordering": true,
+        "order": [[1, 'asc']],
+        "columnDefs": [
+            { "orderable": false, "targets": [4] }
+        ]
+    });
+
     $('.btn-modifier').on('click', function() {
         $('#edit_id').val($(this).data('id'));
         $('#edit_nom').val($(this).data('nom'));

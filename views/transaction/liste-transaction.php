@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, produit-scalable=0">
     <title>Transaction</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <!-- Favicon / CSS (inchangés) -->
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">

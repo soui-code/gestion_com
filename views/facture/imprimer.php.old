@@ -152,14 +152,14 @@
                             </td>
                             <td class="text-right">
                                 <strong>CLIENT FACTURÉ</strong><br>
-                                <?= htmlspecialchars($facture['nom_client'] ?: 'Client Particulier') ?><br>
-                                <?php if($facture['adresse_client']): ?>
+                                <?= htmlspecialchars($facture['nom_client'] ?? 'Client de passage') ?><br>
+                                <?php if(!empty($facture['adresse_client'])): ?>
                                     <?= nl2br(htmlspecialchars($facture['adresse_client'])) ?><br>
                                 <?php endif; ?>
-                                <?php if($facture['telephone_client']): ?>
+                                <?php if(!empty($facture['telephone_client'])): ?>
                                     Tél: <?= htmlspecialchars($facture['telephone_client']) ?><br>
                                 <?php endif; ?>
-                                <?php if($facture['email_client']): ?>
+                                <?php if(!empty($facture['email_client'])): ?>
                                     Email: <?= htmlspecialchars($facture['email_client']) ?>
                                 <?php endif; ?>
                             </td>
@@ -245,6 +245,33 @@
             <p><strong>MANDIGO</strong> - NINEA: 1234567890 - RCCM: CI-ABJ-2023-B-12345</p>
             <p>Société au capital de 1 000 000 FCFA</p>
         </div>
+
+        <!-- Boutons d'action (cachés à l'impression) -->
+        <div style="text-align: center; margin-top: 30px; padding: 20px;" class="no-print">
+            <button onclick="window.print()" style="background: #ff9b44; color: #fff; border: none; padding: 12px 30px; font-size: 16px; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                <i style="margin-right: 5px;">🖨️</i> Imprimer
+            </button>
+            <button onclick="window.close()" style="background: #6c757d; color: #fff; border: none; padding: 12px 30px; font-size: 16px; border-radius: 5px; cursor: pointer;">
+                <i style="margin-right: 5px;">✖️</i> Fermer
+            </button>
+        </div>
     </div>
+
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { background: #fff; padding: 0; }
+            .invoice-box { box-shadow: none; border: none; }
+        }
+    </style>
+
+    <script>
+        // Impression automatique au chargement de la page
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.print();
+            }, 500);
+        });
+    </script>
 </body>
 </html>

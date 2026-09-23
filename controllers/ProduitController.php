@@ -4,19 +4,47 @@ require_once 'models/produit.php';
 class ProduitController extends BaseController{
 
     function liste(){
+        require_once './config/paginator.php';
+
         $produit = new ProduitModel();
+        $produit->id_societe = getSocieteActive();
+        $produit->id_boutique = getBoutiqueActive();
 
         try {
-            $result = $produit->ListeProduit();
+            $paginator = new Paginator('produits p');
+            $paginator->select('p.*, c.nom_categorie, f.nom_fournisseur')
+                ->join('categories c', 'p.id_categorie = c.id_categorie', 'LEFT')
+                ->join('fournisseurs f', 'p.id_fournisseur = f.id_fournisseur', 'LEFT')
+                ->where('1=1');
+
+            if (!empty($produit->id_societe)) {
+                $paginator->where('p.id_societe = ?', $produit->id_societe);
+            }
+            if (!empty($produit->id_boutique)) {
+                $paginator->where('p.id_boutique = ?', $produit->id_boutique);
+            }
+
+            $paginator->orderBy('p.reference DESC')->perPage(20);
+            $paginatedResult = $paginator->paginate();
+
+            $result = $paginatedResult['data'];
+            $pagination = $paginatedResult;
+
         } catch (Exception $e) {
-            setFlash('danger', $e->getMessage());
+            Logger::error('Erreur lors du chargement des produits', ['error' => $e->getMessage()]);
+            setFlash('danger', 'Erreur lors du chargement des produits');
             $result = [];
+            $pagination = null;
         }
 
         require_once 'models/categorie.php';
         require_once 'models/fournisseur.php';
         $catModel = new CategorieModel();
+        $catModel->id_societe = getSocieteActive();
+        $catModel->id_boutique = getBoutiqueActive();
         $fournModel = new FournisseurModel();
+        $fournModel->id_societe = getSocieteActive();
+        $fournModel->id_boutique = getBoutiqueActive();
         
         try {
             $categories = $catModel->getActiveCategories();
@@ -28,13 +56,31 @@ class ProduitController extends BaseController{
 
         if (isset($_POST['btn-ajouter'])) {
             try {
+                $validator = $this->validate($_POST, [
+                    'sai_designation' => 'required|min:3|max:150',
+                    'sai_prix_achat' => 'required|numeric|minValue:0',
+                    'sai_prix_vente' => 'required|numeric|minValue:0',
+                    'sai_stock' => 'required|integer|minValue:0',
+                    'sai_stock_alert' => 'required|integer|minValue:0',
+                    'sai_etat' => 'required|in:actif,inactif'
+                ]);
+
+                if ($validator) {
+                    saveOldInput();
+                    setFlash('danger', $validator->firstError());
+                    redirect('/produit/liste');
+                }
+
                 $prix_achat = (float)$_POST['sai_prix_achat'];
                 $prix_vente = (float)$_POST['sai_prix_vente'];
 
-                // Validation des prix
-                if ($prix_achat < 0 || $prix_vente < 0) {
-                    setFlash('danger', 'Les prix ne peuvent pas être négatifs');
-                } elseif ($prix_vente < $prix_achat) {
+                if ($prix_vente < $prix_achat) {
+                    Logger::warning('Prix de vente inférieur au prix d\'achat', [
+                        'produit' => $_POST['sai_designation'],
+                        'prix_achat' => $prix_achat,
+                        'prix_vente' => $prix_vente,
+                        'utilisateur_id' => $_SESSION['utilisateur_id']
+                    ]);
                     setFlash('warning', 'Attention: Le prix de vente est inférieur au prix d\'achat');
                 }
 
@@ -50,19 +96,36 @@ class ProduitController extends BaseController{
                 $produit->etat = $_POST['sai_etat'];
                 $produit->utilisateur_id = $_SESSION['utilisateur_id'] ?? null;
 
-                if (!empty($_FILES['sai_photo']['name'])) {
-                    $produit->photo_type=$_FILES['sai_photo']['type'];
-                    $produit->photo=file_get_contents($_FILES['sai_photo']['tmp_name']);   
+                // IMPORTANT : on stocke le contenu BINAIRE de l'image (comme en modification),
+                // pas un chemin de fichier, car les vues (POS, liste produits, etc.)
+                // font systématiquement base64_encode($p['photo']) pour l'affichage.
+                if (!empty($_FILES['sai_photo']['name']) && $_FILES['sai_photo']['error'] === UPLOAD_ERR_OK) {
+                    try {
+                        $produit->photo = file_get_contents($_FILES['sai_photo']['tmp_name']);
+                        $produit->photo_type = $_FILES['sai_photo']['type'];
+                    } catch (Exception $e) {
+                        Logger::error('Erreur upload photo produit', ['error' => $e->getMessage()]);
+                        setFlash('warning', 'Produit ajouté mais erreur lors de l\'upload de la photo');
+                        $produit->photo_type = "";
+                        $produit->photo = "";
+                    }
                 } else {
-                    $produit->photo_type="";
-                    $produit->photo="";
+                    $produit->photo_type = "";
+                    $produit->photo = "";
                 }
-                
+
                 $produit->AjouterProduit();
+                clearOldInput();
+                Logger::info('Produit ajouté', [
+                    'reference' => $produit->reference,
+                    'designation' => $produit->designation,
+                    'utilisateur_id' => $_SESSION['utilisateur_id']
+                ]);
                 setFlash('success', 'Produit ajouté avec succès !');
                 redirect('/produit/liste');
             } catch (Exception $e) {
-                setFlash('danger', $e->getMessage());
+                Logger::logException($e);
+                setFlash('danger', isDebug() ? $e->getMessage() : 'Une erreur est survenue lors de l\'ajout du produit');
             }
         }
 
@@ -134,7 +197,8 @@ class ProduitController extends BaseController{
         $this->render('produit/enregistrement-produit',[
             'result' => $result,
             'categories' => $categories,
-            'fournisseurs' => $fournisseurs
+            'fournisseurs' => $fournisseurs,
+            'pagination' => $pagination ?? null
         ]);
     }
 }

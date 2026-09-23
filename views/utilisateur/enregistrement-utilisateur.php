@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
     <title>Utilisateurs</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
@@ -148,36 +152,83 @@
                 </div>
                 <div class="modal-body">
                     <form action="" method="POST">
+                        <?= $csrf_field ?? '' ?>
                         <div class="row">
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Nom :<span class="text-danger">*</span></label>
-                                    <input class="form-control" type="text" name="sai_nom" required>
+                                    <label>Nom <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="text" name="sai_nom" value="<?= e(old('sai_nom')) ?>" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Numéro :</label>
-                                    <input class="form-control" type="text" name="sai_numero">
+                                    <label>Numéro <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="text" name="sai_numero" value="<?= e(old('sai_numero')) ?>" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Login :<span class="text-danger">*</span></label>
-                                    <input class="form-control" type="text" name="sai_login" required>
+                                    <label>Login <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="text" name="sai_login" value="<?= e(old('sai_login')) ?>" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Rôle :</label>
-                                    <select class="select" name="sai_role">
-                                        <option value="caissier" selected>Caissier</option>
+                                    <label>Mot de passe <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="password" name="sai_mdp" minlength="6" required>
+                                    <small class="form-text text-muted">Minimum 6 caractères</small>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label>Rôle <span class="text-danger">*</span></label>
+                                    <select class="select form-control" name="sai_role" id="add_role" required>
+                                        <option value="">-- Sélectionner un rôle --</option>
+                                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                        <option value="admin" <?= old('sai_role') == 'admin' ? 'selected' : '' ?>>Admin</option>
+                                        <option value="manager" <?= old('sai_role') == 'manager' ? 'selected' : '' ?>>Manager</option>
+                                        <?php endif; ?>
+                                        <option value="caissier" <?= old('sai_role') == 'caissier' ? 'selected' : '' ?>>Caissier</option>
                                     </select>
                                 </div>
                             </div>
+
+                            <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                            <!-- Admin : Choisir la société -->
+                            <div class="col-sm-6" id="add_societe_field">
+                                <div class="form-group">
+                                    <label>Société <span class="text-danger">*</span></label>
+                                    <select class="select form-control" name="id_societe" required>
+                                        <option value="">-- Sélectionner une société --</option>
+                                        <?php if (!empty($societes)) {
+                                            foreach ($societes as $s) { ?>
+                                                <option value="<?= $s['id_societe'] ?>"><?= e($s['nom_societe']) ?></option>
+                                            <?php }
+                                        } ?>
+                                    </select>
+                                    <small class="form-text text-muted">Société à laquelle l'utilisateur sera rattaché</small>
+                                </div>
+                            </div>
+                            <?php elseif (isset($_SESSION['role']) && $_SESSION['role'] === 'manager'): ?>
+                            <!-- Manager : Choisir la boutique -->
+                            <div class="col-sm-6" id="add_boutique_field">
+                                <div class="form-group">
+                                    <label>Boutique <span class="text-danger">*</span></label>
+                                    <select class="select form-control" name="id_boutique" required>
+                                        <option value="">-- Sélectionner une boutique --</option>
+                                        <?php if (!empty($boutiques)) {
+                                            foreach ($boutiques as $b) { ?>
+                                                <option value="<?= $b['code_boutique'] ?>"><?= e($b['nom_boutique']) ?></option>
+                                            <?php }
+                                        } ?>
+                                    </select>
+                                    <small class="form-text text-muted">Boutique où le caissier travaillera</small>
+                                </div>
+                            </div>
+                            <?php endif; ?>
                         </div>
                         <div class="submit-section">
-                            <button class="btn btn-primary submit-btn" name="btn-ajouter">Enregistrer</button>
+                            <button class="btn btn-primary submit-btn" type="submit" name="btn-ajouter">Enregistrer</button>
                         </div>
                     </form>
                 </div>
@@ -195,7 +246,8 @@
                 </div>
                 <div class="modal-body">
                     <form action="" method="POST">
-                      <input type="hidden" name="modifier" value="" id="hidden_modifier_id">
+                        <?= $csrf_field ?? '' ?>
+                        <input type="hidden" name="id_utilisateur" value="" id="edit_id">
                         <div class="row">
                             <div class="col-sm-6">
                                 <div class="form-group">
@@ -205,8 +257,8 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Numéro </label>
-                                    <input class="form-control" type="text" name="sai_numero" id="edit_numero">
+                                    <label>Numéro <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="text" name="sai_numero" id="edit_numero" required>
                                 </div>
                             </div>
                             <div class="col-sm-6">
@@ -217,27 +269,37 @@
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Rôle </label>
-                                    <select class="select" name="sai_role" id="edit_role">
+                                    <label>Rôle <span class="text-danger">*</span></label>
+                                    <select class="select form-control" name="sai_role" id="edit_role" required>
                                         <option value="caissier">Caissier</option>
-                                        <option value="manager" >Manager</option>
+                                        <option value="manager">Manager</option>
+                                        <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+                                        <option value="admin">Admin</option>
+                                        <?php endif; ?>
                                     </select>
                                 </div>
                             </div>
                             <div class="col-sm-6">
                                 <div class="form-group">
-                                    <label>Etat </label>
-                                    <select class="select" name="sai_etat" id="edit_etat">
+                                    <label>État <span class="text-danger">*</span></label>
+                                    <select class="select form-control" name="sai_etat" id="edit_etat" required>
                                         <option value="actif">Actif</option>
-                                        <option value="inactif" >Inactif</option>
+                                        <option value="inactif">Inactif</option>
                                     </select>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-group">
+                                    <label>Nouveau mot de passe</label>
+                                    <input class="form-control" type="password" name="sai_nouveau_mdp" minlength="6">
+                                    <small class="form-text text-muted">Laisser vide pour ne pas changer</small>
                                 </div>
                             </div>
                         </div>
                         <div class="submit-section">
-                            <button type="submit" name="btn_modifier" class="btn btn-primary submit-btn">
-    Enregistrer les modifications
-</button>
+                            <button type="submit" name="btn-modifier" class="btn btn-primary submit-btn">
+                                Enregistrer les modifications
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -249,22 +311,26 @@
     <div class="modal custom-modal fade" id="delete_user" role="dialog">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-body">
-                    <div class="form-header">
-                        <h3>Suppression de l'utilisateur</h3>
-                        <p>Êtes-vous sûr de vouloir supprimer <strong id="delete_user_name"></strong> ?</p>
-                    </div>
-                    <div class="modal-btn delete-action">
-                        <div class="row">
-                            <div class="col-6">
-                                <a href="#" id="confirm_delete" class="btn btn-primary continue-btn btn-block">Supprimer</a>
-                            </div>
-                            <div class="col-6">
-                                <a href="#" data-dismiss="modal" class="btn btn-primary cancel-btn btn-block">Annuler</a>
+                <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
+                    <input type="hidden" name="id_utilisateur" id="delete_user_id">
+                    <div class="modal-body">
+                        <div class="form-header">
+                            <h3>Suppression de l'utilisateur</h3>
+                            <p>Êtes-vous sûr de vouloir supprimer <strong id="delete_user_name"></strong> ?</p>
+                        </div>
+                        <div class="modal-btn delete-action">
+                            <div class="row">
+                                <div class="col-6">
+                                    <button type="submit" name="btn-supprimer" class="btn btn-danger continue-btn btn-block">Supprimer</button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" data-dismiss="modal" class="btn btn-secondary cancel-btn btn-block">Annuler</button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -296,7 +362,7 @@
             var role   = $(this).data('role');
             var etat   = $(this).data('etat');
 
-            $('#hidden_modifier_id').val(id);
+            $('#edit_id').val(id);
             $('#edit_nom').val(nom);
             $('#edit_login').val(login);
             $('#edit_numero').val(numero);
@@ -310,7 +376,7 @@
             var nom = $(this).data('nom');
 
             $('#delete_user_name').text(nom);
-            $('#confirm_delete').attr('href', '?supprimer=' + id);
+            $('#delete_user_id').val(id);
         });
     });
     </script>

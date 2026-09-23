@@ -8,6 +8,10 @@
         <meta name="author" content="Dreamguys - Bootstrap Admin Template">
         <meta name="robots" content="noindex, nofollow">
         <title>Connexion</title>
+		<!-- Icon pwa -->
+     <link rel="manifest" href="<?= url('/manifest.json') ?>">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="<?= url('/assets/icons/icon-192.png') ?>">
 		
 		<!-- Favicon -->
         <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
@@ -47,7 +51,7 @@
 							<?php
 if (!empty($message)) {
 ?><div class="alert alert-danger alert-dismissible fade show" role="alert">
-								<strong>Erreur!</strong>  Login ou Mot de passe incorrecte
+								<strong>Erreur!</strong> <?= e($message) ?>
 								<button type="button" class="close" data-dismiss="alert" aria-label="Close">
 									<span aria-hidden="true">&times;</span>
 								</button>
@@ -57,9 +61,10 @@ if (!empty($message)) {
 ?>
 							<!-- Account Form -->
 							<form action="" method="POST">
+								<?= $csrf_field ?? '' ?>
 								<div class="form-group">
 									<label>Login</label>
-									<input class="form-control" type="text" name="sai_login" required>
+									<input class="form-control" type="text" name="sai_login" value="<?= e(old('sai_login')) ?>" required autofocus>
 								</div>
 								<div class="form-group">
 									<div class="row">
@@ -70,7 +75,7 @@ if (!empty($message)) {
 									<input class="form-control" type="password" name="sai_mdp" required>
 								</div>
 								<div class="form-group text-center">
-									<button class="btn btn-primary account-btn" name="btn-connexion">Connexion</button>
+									<button class="btn btn-primary account-btn" type="submit" name="btn-connexion">Connexion</button>
 								</div>
 							</form>
 							<!-- /Account Form -->

@@ -1,39 +1,57 @@
 <?php
-require_once './database/database.php';
+// Récupération de l'utilisateur connecté
+$id_societe = $_SESSION['id_societe'] ?? null;
+$id_boutique = $_SESSION['id_boutique'] ?? null;
+$role = $_SESSION['role'] ?? 'caissier';
 
+// Construction de la requête avec filtrage
 $sql = "
-    SELECT 
+    SELECT
         COALESCE(t.mode_reglement, 'Non spécifié') AS mode,
         COUNT(*) AS nombre_transactions,
         COALESCE(SUM(t.montant_transaction), 0) AS total_montant
     FROM transactions t
-    WHERE EXISTS (
-        SELECT 1 FROM commandes c 
-        WHERE c.numero_facture = t.numero_facture
-          AND c.statut_commande = 'Vente'
-          AND c.etat_commande = 'validée'
-    )
-    AND t.etat_transaction = 'validée'
+    WHERE t.etat_transaction = 'validée'
+";
+
+// Filtrage par société/boutique (sauf pour admin)
+if ($role !== 'admin' && $id_societe) {
+    $sql .= " AND t.id_societe = :id_societe";
+}
+
+if ($role === 'caissier' && $id_boutique) {
+    $sql .= " AND t.id_boutique = :id_boutique";
+}
+
+$sql .= "
     GROUP BY t.mode_reglement
     ORDER BY total_montant DESC
 ";
+
 $pdo = getDatabaseConnection();
-$stmt = $pdo->query($sql);
+$stmt = $pdo->prepare($sql);
+
+// Bind des paramètres
+if ($role !== 'admin' && $id_societe) {
+    $stmt->bindParam(':id_societe', $id_societe, PDO::PARAM_INT);
+}
+
+if ($role === 'caissier' && $id_boutique) {
+    $stmt->bindParam(':id_boutique', $id_boutique, PDO::PARAM_INT);
+}
+
+$stmt->execute();
 $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+// Si aucun résultat, retourner des données vides
 if (empty($results)) {
-    $sql = "
-        SELECT 
-            COALESCE(mode_reglement, 'Non spécifié') AS mode,
-            COUNT(*) AS nombre,
-            COALESCE(SUM(montant_transaction), 0) AS total_montant
-        FROM transactions 
-        WHERE etat_transaction = 'validée'
-        GROUP BY mode_reglement
-        ORDER BY total_montant DESC
-    ";
-    $stmt = $pdo->query($sql);
-    $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'modes' => [],
+        'montants' => [],
+        'couleurs' => []
+    ]);
+    exit;
 }
 
 $modes = [];

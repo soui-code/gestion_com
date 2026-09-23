@@ -1,1 +1,40 @@
 /libraries
+
+# Environment files
+.env
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Cache
+cache/*
+!cache/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Composer (if used later)
+/vendor/
+
+# Node modules (if used later)
+node_modules/

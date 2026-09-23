@@ -1,7 +1,7 @@
 <?php
 class transactionmodel
 {
-    public $numero_transaction, $date_transaction, $heure_transaction, $montant_transaction, $mode_reglement, $numero_facture, $utilisateur_id, $etat_transaction, $con;
+    public $numero_transaction, $date_transaction, $heure_transaction, $montant_transaction, $mode_reglement, $numero_facture, $utilisateur_id, $etat_transaction, $id_societe, $id_boutique, $con;
 
     public function __construct()
     {
@@ -10,7 +10,7 @@ class transactionmodel
 
     public function AjoutTransaction()
     {
-        $req = $this->con->prepare("INSERT INTO transactions VALUES (:numero_transaction,:date_transaction,:heure_transaction,:montant_transaction,:mode_reglement,:numero_facture,:utilisateur_id,:etat_transaction)");
+        $req = $this->con->prepare("INSERT INTO transactions (numero_transaction, date_transaction, heure_transaction, montant_transaction, mode_reglement, numero_facture, utilisateur_id, etat_transaction, id_societe, id_boutique) VALUES (:numero_transaction, :date_transaction, :heure_transaction, :montant_transaction, :mode_reglement, :numero_facture, :utilisateur_id, :etat_transaction, :id_societe, :id_boutique)");
         $req->bindParam(":numero_transaction", $this->numero_transaction);
         $req->bindParam(":date_transaction", $this->date_transaction);
         $req->bindParam(":heure_transaction", $this->heure_transaction);
@@ -19,6 +19,8 @@ class transactionmodel
         $req->bindParam(":numero_facture", $this->numero_facture);
         $req->bindParam(":utilisateur_id", $this->utilisateur_id);
         $req->bindParam(":etat_transaction", $this->etat_transaction);
+        $req->bindParam(":id_societe", $this->id_societe);
+        $req->bindParam(":id_boutique", $this->id_boutique);
         try {
             return $req->execute();
         }
@@ -33,8 +35,21 @@ class transactionmodel
         $sql = "SELECT t.*, u.nom as nom_utilisateur 
                 FROM transactions t
                 LEFT JOIN utilisateurs u ON t.utilisateur_id = u.utilisateur_id
-                ORDER BY t.date_transaction DESC, t.heure_transaction DESC";
+                WHERE 1=1";
+        if (!empty($this->id_societe)) {
+            $sql .= " AND t.id_societe = :id_societe";
+        }
+        if (!empty($this->id_boutique)) {
+            $sql .= " AND t.id_boutique = :id_boutique";
+        }
+        $sql .= " ORDER BY t.date_transaction DESC, t.heure_transaction DESC";
         $req = $this->con->prepare($sql);
+        if (!empty($this->id_societe)) {
+            $req->bindParam(":id_societe", $this->id_societe);
+        }
+        if (!empty($this->id_boutique)) {
+            $req->bindParam(":id_boutique", $this->id_boutique);
+        }
         try {
             $req->execute();
             return $req->fetchAll(PDO::FETCH_ASSOC);
@@ -43,11 +58,4 @@ class transactionmodel
             return "Erreur lors de l'affichage des transactions : " . $th->getMessage();
         }
     }
-
-
-
-
-
-
-
 }

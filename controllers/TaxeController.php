@@ -4,6 +4,7 @@ require 'models/taxe.php';
 class taxe extends BaseController{
     public function enregistrement(){
         $taxe = new taxemodel();
+        $taxe->id_societe = getSocieteActive() ?? null;
         $result=$taxe->ListeTaxe();
 
         if (isset($_POST['btn-ajouter-taxe'])) {

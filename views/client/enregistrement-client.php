@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Clients</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -113,6 +117,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <div class="modal-header">
                         <h5 class="modal-title">Ajouter un client</h5>
                         <button type="button" class="close" data-dismiss="modal">×</button>
@@ -172,6 +177,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <input type="hidden" name="sai_code_client" id="edit_code">
 
                     <div class="modal-header">
@@ -233,6 +239,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <form action="" method="POST">
+                    <?= $csrf_field ?? '' ?>
                     <input type="hidden" name="sai_code_client" id="delete_code">
                     <div class="modal-body text-center py-4">
                         <h5>Confirmer la suppression</h5>

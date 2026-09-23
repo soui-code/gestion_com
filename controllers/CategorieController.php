@@ -5,6 +5,8 @@ class categorie extends BaseController {
     
     public function liste() {
         $cat = new categoriemodel();
+        $cat->id_societe = getSocieteActive() ?? null;
+        $cat->id_boutique = getBoutiqueActive() ?? null;
         
         if (isset($_POST['btn-ajouter'])) {
             $cat->nom_categorie = trim($_POST['sai_nom']);

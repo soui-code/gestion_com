@@ -5,6 +5,8 @@ class fournisseur extends BaseController {
     
     public function liste() {
         $fr = new fournisseurmodel();
+        $fr->id_societe = getSocieteActive() ?? null;
+        $fr->id_boutique = getBoutiqueActive() ?? null;
         
         if (isset($_POST['btn-ajouter'])) {
             $fr->nom_fournisseur = trim($_POST['sai_nom']);

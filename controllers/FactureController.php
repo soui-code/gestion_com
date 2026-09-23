@@ -1,11 +1,14 @@
 <?php
 require 'models/facture.php';
+require 'models/facture_fne.php';
 
 class facture extends BaseController
 {
     public function liste()
     {
         $facture = new facturemodel();
+        $facture->id_societe = getSocieteActive() ?? null;
+        $facture->id_boutique = getBoutiqueActive() ?? null;
 
         $result = $facture->ListeFacture();
         $this->render('facture/liste-facture', [
@@ -19,51 +22,42 @@ class facture extends BaseController
 
 
     
-public function imprimer($id = null)
+    /**
+     * Ancienne méthode d'impression - Redirige vers FNE
+     * @deprecated Utiliser imprimer_fne() à la place
+     */
+    public function imprimer($id = null)
     {
-
-        $id = $_GET['id'];
+        $id = $_GET['id'] ?? $_GET['numero'] ?? $id;
 
         if (!$id) {
             die("ID invalide");
         }
 
-        // --- Appel du modèle ---
-        $model = new facturemodel();
-        $facture = $model->getFactureAvecClient($id);
+        // Rediriger vers la nouvelle impression FNE
+        redirect('/facture/imprimer_fne?id=' . urlencode($id));
+    }
+
+    /**
+     * Imprimer la Facture Normalisée Électronique (FNE)
+     */
+    public function imprimer_fne($id = null)
+    {
+        $id = $_GET['id'] ?? $_GET['numero'] ?? $id;
+
+        if (!$id) {
+            die("Numéro de facture invalide");
+        }
+
+        $factureFNE = new FactureFNE();
+        $facture = $factureFNE->getFactureFNE($id, getSocieteActive() ?? null);
 
         if (!$facture) {
-            die("Facture introuvable");
+            die("Facture FNE introuvable : " . htmlspecialchars($id));
         }
 
-        // --- Récupérer les articles (commandes) liées ---
-        // Le numéro de facture peut être au format 'FACT-YYYYMMDD-ID' ou juste 'ID'
-        $itemsQuery = "FACT-" . date('Ymd', strtotime($facture['date_facture'])) . "-" . str_pad($facture['numero_facture'], 4, '0', STR_PAD_LEFT);
-        $items = $model->getFactureItems($itemsQuery);
-        
-        if (empty($items)) {
-            // Tentative par ID simple
-            $items = $model->getFactureItems((string)$facture['numero_facture']);
-        }
-        
-        if (empty($items)) {
-            // Tentative par Titre (pour les anciennes factures)
-            $items = $model->getFactureItems($facture['titre_facture']);
-        }
-
-        $taxe = null;
-        if (!empty($facture['code_taxe'])) {
-            $con = getDatabaseConnection();
-            $taxeStmt = $con->prepare("SELECT * FROM taxes WHERE code_taxe = ?");
-            $taxeStmt->execute([$facture['code_taxe']]);
-            $taxe = $taxeStmt->fetch(PDO::FETCH_ASSOC);
-        }
-
-        $this->render('facture/imprimer', [
-            'facture' => $facture,
-            'items' => $items,
-            'taxe' => $taxe
-        ]);
+        // Charger la vue FNE
+        require 'views/facture/imprimer_fne.php';
         exit;
     }
 }

@@ -4,6 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestion des Boutiques</title>
+    <!-- Icon pwa -->
+     <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1e293b">
+<link rel="apple-touch-icon" href="/assets/icons/icon-192.png">
 
     <link rel="shortcut icon" type="image/x-icon" href="../assets/img/favicon.png">
     <link rel="stylesheet" href="../assets/css/bootstrap.min.css">
@@ -50,14 +54,26 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($mouvements as $mouv) { 
+                            <?php foreach ($mouvements as $mouv) {
                                 $date_m = date('d/m/Y H:i', strtotime($mouv['date_mouvement']));
-                                $designation = $mouv['designation'] ? htmlspecialchars($mouv['designation']) : 'Ref: '.$mouv['reference_produit'];
+
+                                // Afficher la désignation (ou référence si produit supprimé)
+                                if (!empty($mouv['designation'])) {
+                                    $designation = htmlspecialchars($mouv['designation']);
+                                    $ref_info = '<small class="text-muted">(Ref: '.$mouv['reference_produit'].')</small>';
+                                } else {
+                                    $designation = '<span class="text-warning">Produit supprimé</span>';
+                                    $ref_info = '<small class="text-muted">(Ref: '.$mouv['reference_produit'].')</small>';
+                                }
+
                                 $user = $mouv['nom_utilisateur'] ? htmlspecialchars($mouv['nom_utilisateur']) : 'Système';
                             ?>
                             <tr>
                                 <td><?= $date_m ?></td>
-                                <td><strong><?= $designation ?></strong></td>
+                                <td>
+                                    <strong><?= $designation ?></strong><br>
+                                    <?= $ref_info ?>
+                                </td>
                                 <td>
                                     <?php if ($mouv['type_mouvement'] == 'entree') { ?>
                                         <span class="badge bg-inverse-success"><i class="fa fa-arrow-down mr-1"></i> Entrée</span>

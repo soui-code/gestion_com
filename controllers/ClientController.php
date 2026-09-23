@@ -5,6 +5,8 @@ class ClientController extends BaseController{
 
     public function enregistrement(){
         $client = new ClientModel();
+        $client->id_societe = getSocieteActive() ?? null;
+        $client->id_boutique = getBoutiqueActive() ?? null;
         $result = [];
 
         try {
@@ -28,6 +30,9 @@ class ClientController extends BaseController{
                     $client->email_client = $email ?? '';
                     $client->adresse_client = $_POST['sai_adresse_client'] ?? '';
                     $client->etat_client = $_POST['sai_etat_client'] ?? 'actif';
+                    $client->registre_commerce = $_POST['sai_registre_commerce'] ?? null;
+                    $client->compte_contribuable = $_POST['sai_compte_contribuable'] ?? null;
+                    $client->regime_imposition = $_POST['sai_regime_imposition'] ?? null;
 
                     $client->AjoutClient();
                     setFlash('success', 'Client ajouté avec succès !');
@@ -53,6 +58,9 @@ class ClientController extends BaseController{
                     $client->email_client = $_POST['sai_email_client'] ?? '';
                     $client->adresse_client = $_POST['sai_adresse_client'] ?? '';
                     $client->etat_client = $_POST['sai_etat_client'] ?? 'actif';
+                    $client->registre_commerce = $_POST['sai_registre_commerce'] ?? null;
+                    $client->compte_contribuable = $_POST['sai_compte_contribuable'] ?? null;
+                    $client->regime_imposition = $_POST['sai_regime_imposition'] ?? null;
 
                     $client->ModifierClient();
                     setFlash('success', 'Client modifié avec succès !');
@@ -70,6 +78,7 @@ class ClientController extends BaseController{
                     setFlash('danger', 'Code client invalide');
                 } else {
                     $client->code_client = $code;
+                    $client->id_societe = getSocieteActive() ?? null;
                     $client->SupprimerClient();
                     setFlash('success', 'Client supprimé avec succès !');
                 }

@@ -1,7 +1,7 @@
 <?php
 class boutiquemodel
 {
-    public $code_boutique, $nom_boutique, $telephone_boutique, $latitude, $longitude, $produit_json, $etat_boutique, $con;
+    public $code_boutique, $nom_boutique, $telephone_boutique, $latitude, $longitude, $produit_json, $etat_boutique, $id_societe, $con;
 
     public function __construct()
     {
@@ -10,13 +10,14 @@ class boutiquemodel
 
     public function AjoutBoutique()
     {
-        $req = $this->con->prepare("INSERT INTO boutiques VALUES (null,:nom_boutique,:telephone_boutique,:latitude,:longitude,:produit_json,:etat_boutique)");
+        $req = $this->con->prepare("INSERT INTO boutiques (nom_boutique, telephone_boutique, latitude, longitude, produit_json, etat_boutique, id_societe) VALUES (:nom_boutique, :telephone_boutique, :latitude, :longitude, :produit_json, :etat_boutique, :id_societe)");
         $req->bindParam(":nom_boutique", $this->nom_boutique);
         $req->bindParam(":telephone_boutique", $this->telephone_boutique);
         $req->bindParam(":latitude", $this->latitude);
         $req->bindParam(":longitude", $this->longitude);
         $req->bindParam(":produit_json", $this->produit_json);
         $req->bindParam(":etat_boutique", $this->etat_boutique);
+        $req->bindParam(":id_societe", $this->id_societe);
         try {
             return $req->execute();
         }
@@ -27,7 +28,7 @@ class boutiquemodel
 
     public function ModificationBoutique()
     {
-        $req = $this->con->prepare("UPDATE boutiques SET nom_boutique=:nom_boutique,telephone_boutique=:telephone_boutique,latitude=:latitude,longitude=:longitude,produit_json=:produit_json,etat_boutique=:etat_boutique WHERE code_boutique=:code_boutique");
+        $req = $this->con->prepare("UPDATE boutiques SET nom_boutique=:nom_boutique,telephone_boutique=:telephone_boutique,latitude=:latitude,longitude=:longitude,produit_json=:produit_json,etat_boutique=:etat_boutique,id_societe=:id_societe WHERE code_boutique=:code_boutique");
         $req->bindParam(":code_boutique", $this->code_boutique);
         $req->bindParam(":nom_boutique", $this->nom_boutique);
         $req->bindParam(":telephone_boutique", $this->telephone_boutique);
@@ -35,11 +36,12 @@ class boutiquemodel
         $req->bindParam(":longitude", $this->longitude);
         $req->bindParam(":produit_json", $this->produit_json);
         $req->bindParam(":etat_boutique", $this->etat_boutique);
+        $req->bindParam(":id_societe", $this->id_societe);
         try {
             return $req->execute();
         }
         catch (\Throwable $th) {
-            return "Erreur lors de l'ajout de la boutique : " . $th->getMessage();
+            return "Erreur lors de la modification de la boutique : " . $th->getMessage();
         }
     }
 
@@ -58,7 +60,8 @@ class boutiquemodel
 
     public function ListeBoutique()
     {
-        $req = $this->con->prepare("SELECT * FROM boutiques");
+        $req = $this->con->prepare("SELECT * FROM boutiques WHERE id_societe = :id_societe");
+        $req->bindParam(":id_societe", $this->id_societe);
         try {
             $req->execute();
             return $req->fetchAll(PDO::FETCH_ASSOC);
@@ -71,8 +74,9 @@ class boutiquemodel
 
     public function getAllBoutiques()
     {
-        $sql = "SELECT * FROM boutiques WHERE etat_boutique = 'active'";
+        $sql = "SELECT * FROM boutiques WHERE etat_boutique = 'active' AND id_societe = :id_societe";
         $req = $this->con->prepare($sql);
+        $req->bindParam(":id_societe", $this->id_societe);
         $req->execute();
         return $req->fetchAll(PDO::FETCH_ASSOC);
     }
